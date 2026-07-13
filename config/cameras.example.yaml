@@ -1,0 +1,41 @@
+detection:
+  model_weights: yolov8n.pt
+  confidence: 0.4
+  device: cpu # or "cuda:0" if a GPU is available
+  classes: [truck]
+
+storage:
+  db_path: data/events.db
+  snapshot_dir: data/snapshots
+
+cameras:
+  - id: gate-1-north
+    name: "Gate 1 - North Boom Barrier"
+    # Credentials are injected from the environment, never committed here.
+    rtsp_url: "rtsp://${GATE1_CAM_USER}:${GATE1_CAM_PASS}@192.168.1.101:554/stream1"
+    # Polygon (pixel coordinates in this camera's frame) tightly bounding the
+    # boom barrier arm's swept area. Draw this on a still frame from the feed.
+    zone:
+      - [420, 260]
+      - [860, 260]
+      - [860, 420]
+      - [420, 420]
+    # Vector pointing from the outside (public road) toward the inside
+    # (facility yard) in the same pixel coordinate space as `zone`. Used to
+    # classify a truck that dwells in the zone and then leaves as an entry
+    # (moving with this vector) or an exit (moving against it).
+    inside_direction: [0, 1]
+    min_dwell_frames: 3
+    track_timeout_frames: 150
+
+  - id: gate-2-south
+    name: "Gate 2 - South Boom Barrier"
+    rtsp_url: "rtsp://${GATE2_CAM_USER}:${GATE2_CAM_PASS}@192.168.1.102:554/stream1"
+    zone:
+      - [300, 300]
+      - [780, 300]
+      - [780, 460]
+      - [300, 460]
+    inside_direction: [0, -1]
+    min_dwell_frames: 3
+    track_timeout_frames: 150

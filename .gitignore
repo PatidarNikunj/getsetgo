@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# boomcam runtime data
+data/
+*.pt
+config/cameras.yaml

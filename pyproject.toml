@@ -1,0 +1,24 @@
+[project]
+name = "boomcam"
+version = "0.1.0"
+description = "Detect truck entry/exit at boom barriers from live RTSP surveillance camera feeds"
+requires-python = ">=3.10"
+dependencies = [
+    "ultralytics>=8.2",
+    "opencv-python-headless>=4.9",
+    "numpy>=1.26",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+boomcam = "boomcam.cli:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

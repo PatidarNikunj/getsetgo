@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Supply-chain hardening (OWASP A06/A08): don't install versions published in the last 24h.
+minimumReleaseAge: 1440
+
+# Only these packages may run install scripts; extend deliberately when adding deps.
+onlyBuiltDependencies: []

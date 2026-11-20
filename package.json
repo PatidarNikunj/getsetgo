@@ -1,0 +1,26 @@
+{
+  "name": "getsetgo",
+  "private": true,
+  "description": "A fun learning monorepo for modern web, backend and AI technologies.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@getsetgo/config": "workspace:*",
+    "prettier": "^3.10.1",
+    "turbo": "^2.11.13",
+    "typescript": "~6.0.3"
+  }
+}

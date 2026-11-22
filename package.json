@@ -15,7 +15,14 @@
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "infra:env": "node scripts/setup-env.mjs",
+    "infra:up": "docker compose up -d --wait",
+    "infra:tools": "docker compose --profile tools up -d --wait",
+    "infra:down": "docker compose --profile tools down",
+    "infra:reset": "docker compose --profile tools down --volumes",
+    "infra:logs": "docker compose logs -f",
+    "infra:ps": "docker compose ps"
   },
   "devDependencies": {
     "@getsetgo/config": "workspace:*",

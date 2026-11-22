@@ -25,6 +25,9 @@ they can be compared side by side; each has a clearly defined home.
 ```
 apps/        Deployable apps (added in later phases)
 packages/    Shared code; config/ holds TypeScript, ESLint, Prettier and Vitest presets
+infra/       Docker init scripts and config for local databases
+docs/        Guides (local development, later cloud deployment)
+scripts/     Repo helper scripts
 specs/       Feature specs created with Spec Kit (one folder per feature)
 .specify/    Spec Kit templates, scripts and the project constitution
 .claude/     Claude Code skills (Spec Kit slash commands)
@@ -32,11 +35,19 @@ specs/       Feature specs created with Spec Kit (one folder per feature)
 
 ## Getting started
 
-Prerequisites: Node 22 (`nvm use`), pnpm 10, and later Python 3.13 + uv and Docker.
+Prerequisites: Node 22 (`nvm use`), pnpm 10, Docker, and later Python 3.13 + uv.
 
 ```bash
 pnpm install
 ```
+
+```bash
+pnpm infra:env && pnpm infra:up
+```
+
+That starts Postgres, MongoDB and Redis locally. See
+[`docs/local-development.md`](docs/local-development.md) for admin GUIs, connection strings and
+troubleshooting.
 
 ```bash
 pnpm lint
@@ -58,7 +69,7 @@ The rules every feature must follow (security, accessibility, testing, stack bou
 ## Roadmap
 
 - [x] Phase 1: Monorepo foundation, shared configs, Spec Kit + constitution
-- [ ] Phase 2: Local infrastructure (Docker Compose: Postgres, Mongo, Redis)
+- [x] Phase 2: Local infrastructure (Docker Compose: Postgres, Mongo, Redis)
 - [ ] Phase 3: Backends (NestJS GraphQL API, FastAPI AI service)
 - [ ] Phase 4: Frontends (two Next.js apps)
 - [ ] Phase 5: Observability & client storage (Sentry, GA, Vercel, IndexedDB, cookies)

@@ -7,3 +7,8 @@ minimumReleaseAge: 1440
 
 # Only these packages may run install scripts; extend deliberately when adding deps.
 onlyBuiltDependencies: []
+
+# Reviewed and not needed: protobufjs only prints a notice; @parcel/watcher ships prebuilt binaries.
+ignoredBuiltDependencies:
+  - "@apollo/protobufjs"
+  - "@parcel/watcher"

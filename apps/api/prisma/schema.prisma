@@ -1,0 +1,25 @@
+// Prisma schema for apps/api (PostgreSQL: database getsetgo_api).
+// Change models here, then run `pnpm --filter @getsetgo/api db:migrate`.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  // Explicit, so the generated imports are identical locally and in Docker builds.
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String   @db.VarChar(200)
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([createdAt])
+  @@map("notes")
+}

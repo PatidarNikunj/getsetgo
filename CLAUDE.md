@@ -39,11 +39,18 @@ pnpm format           # Prettier
 pnpm infra:env        # create .env with random local passwords
 pnpm infra:up         # start Postgres, Mongo, Redis (Docker); infra:tools adds GUIs
 pnpm infra:reset      # delete local data and start fresh
+pnpm stack:up         # run api + ai as production-like containers
 pnpm --filter <name> <script>   # run in a single package
+pnpm --filter @getsetgo/api test:e2e            # api e2e tests (needs infra:up)
+pnpm --filter @getsetgo/api db:migrate          # new Prisma migration after editing schema.prisma
+pnpm --filter @getsetgo/ai openapi && pnpm --filter @getsetgo/api ai:types   # refresh api↔ai contract
 ```
 
 ## Conventions
 
+- Node 24 is required (NestJS 12 is ESM-only; Jest runs with `--experimental-vm-modules`).
+- Python (`apps/ai`): uv for deps, Ruff + mypy strict; run tools with `uv run ...` inside `apps/ai`.
+- New GraphQL resolvers are denied unless marked `@Public()` (temporary) or authenticated.
 - TypeScript `strict`; no `any` without a justifying comment. Pinned to TypeScript 6.0 and ESLint 9
   until `typescript-eslint` and `eslint-plugin-jsx-a11y` support newer majors.
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`).

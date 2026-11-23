@@ -12,14 +12,15 @@ pnpm infra:env     # create .env with random local passwords (only the first tim
 pnpm infra:up      # start Postgres, MongoDB and Redis, and wait until they're healthy
 ```
 
-| Command            | What it does                                                     |
-| ------------------ | ---------------------------------------------------------------- |
-| `pnpm infra:up`    | Start the databases                                              |
-| `pnpm infra:tools` | Also start the admin GUIs (pgAdmin, Mongo Express, RedisInsight) |
-| `pnpm infra:ps`    | Show what's running and whether it's healthy                     |
-| `pnpm infra:logs`  | Follow container logs (Ctrl+C to stop)                           |
-| `pnpm infra:down`  | Stop everything; your data is kept                               |
-| `pnpm infra:reset` | Stop everything and **delete all local data** (fresh start)      |
+| Command            | What it does                                                           |
+| ------------------ | ---------------------------------------------------------------------- |
+| `pnpm infra:up`    | Start the databases                                                    |
+| `pnpm infra:tools` | Also start the admin GUIs (pgAdmin, Mongo Express, RedisInsight)       |
+| `pnpm infra:ps`    | Show what's running and whether it's healthy                           |
+| `pnpm infra:logs`  | Follow container logs (Ctrl+C to stop)                                 |
+| `pnpm infra:down`  | Stop everything; your data is kept                                     |
+| `pnpm infra:reset` | Stop everything and **delete all local data** (fresh start)            |
+| `pnpm stack:up`    | Also build and run `api` + `ai` as containers (see `docs/backends.md`) |
 
 ## What's running
 
@@ -42,11 +43,15 @@ and **can't read the other service's data**:
 | `apps/api` | `getsetgo_api` / `getsetgo_api` | `getsetgo_api` / `getsetgo_api` | password |
 | `apps/ai`  | `getsetgo_ai` / `getsetgo_ai`   | `getsetgo_ai` / `getsetgo_ai`   | —        |
 
+The `getsetgo_api` login may also create databases locally, because `prisma migrate dev` needs a
+temporary "shadow" database. It still can't connect to the `getsetgo_ai` database.
+
 The init scripts that create them live in `infra/postgres/init/` and `infra/mongo/init/`. They
 run **only the first time** a data volume is created. If you change a password in `.env` later,
 run `pnpm infra:reset` (deletes data) or change it inside the database by hand.
 
-Connection strings for the apps (filled from `.env`; the apps get their own `.env` in Phase 3):
+Connection strings for the apps. `pnpm infra:env` writes them into `apps/api/.env` and
+`apps/ai/.env` for you:
 
 ```text
 # apps/api

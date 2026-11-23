@@ -1,0 +1,55 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateNoteInput {
+  content: String!
+  title: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Mutation {
+  createNote(input: CreateNoteInput!): Note!
+  deleteNote(id: ID!): Boolean!
+
+  """Summarize a note with Claude (via the AI service)"""
+  summarizeNote(id: ID!): Note!
+}
+
+"""A personal note"""
+type Note {
+  content: String!
+  createdAt: DateTime!
+  id: ID!
+
+  """Latest AI summary, if any"""
+  summary: NoteSummary
+  title: String!
+  updatedAt: DateTime!
+}
+
+"""An AI-generated summary of a note"""
+type NoteSummary {
+  createdAt: DateTime!
+  keyPoints: [String!]!
+
+  """Claude model that wrote the summary"""
+  model: String!
+  summary: String!
+}
+
+input NotesPageInput {
+  skip: Int! = 0
+  take: Int! = 20
+}
+
+type Query {
+  note(id: ID!): Note!
+
+  """Notes, newest first"""
+  notesList(page: NotesPageInput): [Note!]!
+}

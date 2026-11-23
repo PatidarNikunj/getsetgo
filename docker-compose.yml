@@ -86,6 +86,48 @@ services:
       timeout: 5s
       retries: 10
 
+  # ---- Backend services in containers: `pnpm stack:up` (`--profile apps`) ----
+  # For day-to-day development, run them natively with `pnpm dev` instead (hot reload).
+
+  ai:
+    build: { context: ., dockerfile: apps/ai/Dockerfile }
+    image: getsetgo-ai:local
+    profiles: [apps]
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql+asyncpg://${AI_DB_USER:-getsetgo_ai}:${AI_DB_PASSWORD}@postgres:5432/${AI_DB_NAME:-getsetgo_ai}
+      MONGODB_URI: mongodb://${AI_MONGO_USER:-getsetgo_ai}:${AI_MONGO_PASSWORD}@mongo:27017/${AI_MONGO_DB:-getsetgo_ai}?authSource=${AI_MONGO_DB:-getsetgo_ai}
+      MONGODB_DB: ${AI_MONGO_DB:-getsetgo_ai}
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:?set SERVICE_JWT_SECRET in .env}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # No published port: internal only, reachable from the api container (OWASP A01).
+    expose: ["8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo: { condition: service_healthy }
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    image: getsetgo-api:local
+    profiles: [apps]
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${API_DB_USER:-getsetgo_api}:${API_DB_PASSWORD}@postgres:5432/${API_DB_NAME:-getsetgo_api}
+      MONGODB_URI: mongodb://${API_MONGO_USER:-getsetgo_api}:${API_MONGO_PASSWORD}@mongo:27017/${API_MONGO_DB:-getsetgo_api}?authSource=${API_MONGO_DB:-getsetgo_api}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      AI_SERVICE_URL: http://ai:8000
+      SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:?set SERVICE_JWT_SECRET in .env}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+    ports:
+      - "127.0.0.1:${API_PORT:-4000}:4000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      ai: { condition: service_healthy }
+
   # ---- Optional admin GUIs: `docker compose --profile tools up -d` ----
 
   pgadmin:

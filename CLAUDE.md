@@ -23,6 +23,8 @@ is the source of truth for stack boundaries, security (OWASP Top 10), accessibil
 - `apps/web-shadcn`: shadcn/ui + Tailwind · Zustand · TanStack Query · React Hook Form + Zod
 - `apps/api`: NestJS + Apollo GraphQL, Prisma (Postgres), Mongoose (Mongo), Redis; owns auth
 - `apps/ai`: FastAPI, internal only, called by `api`; Claude agents; Beanie (Mongo), SQLAlchemy (Postgres)
+- Local databases: one database and login per service (see `docs/local-development.md`);
+  never give a service access to another service's database.
 - `packages/*`: shared code; `packages/config` has the TS/ESLint/Prettier/Vitest presets
 
 ## Commands
@@ -34,6 +36,9 @@ pnpm typecheck        # tsc --noEmit across the workspace
 pnpm test             # all tests
 pnpm build            # build all apps/packages
 pnpm format           # Prettier
+pnpm infra:env        # create .env with random local passwords
+pnpm infra:up         # start Postgres, Mongo, Redis (Docker); infra:tools adds GUIs
+pnpm infra:reset      # delete local data and start fresh
 pnpm --filter <name> <script>   # run in a single package
 ```
 

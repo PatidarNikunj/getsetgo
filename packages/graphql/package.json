@@ -1,0 +1,28 @@
+{
+  "name": "@getsetgo/graphql",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed GraphQL operations shared by both web apps, generated from apps/api/schema.graphql.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "codegen": "graphql-codegen --config codegen.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "graphql": "^16.15.0"
+  },
+  "devDependencies": {
+    "@getsetgo/config": "workspace:*",
+    "@graphql-codegen/cli": "^8.0.0",
+    "@graphql-codegen/client-preset": "^7.0.0",
+    "eslint": "^9.39.5",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  }
+}

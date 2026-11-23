@@ -10,7 +10,7 @@ they can be compared side by side; each has a clearly defined home.
 
 | Area                | Tech                                                                                         |
 | ------------------- | -------------------------------------------------------------------------------------------- |
-| Monorepo            | pnpm workspaces, Turborepo, Node 22, Python 3.13 + uv                                        |
+| Monorepo            | pnpm workspaces, Turborepo, Node 24, Python 3.13 + uv                                        |
 | `apps/web-material` | Next.js 16, React 19, MUI, Redux Toolkit, Apollo Client, Formik + Yup                        |
 | `apps/web-shadcn`   | Next.js 16, React 19, shadcn/ui + Tailwind 4, Zustand, TanStack Query, React Hook Form + Zod |
 | `apps/api`          | NestJS, Apollo GraphQL, Prisma (Postgres), Mongoose (Mongo), Redis, OAuth + JWT              |
@@ -23,7 +23,7 @@ they can be compared side by side; each has a clearly defined home.
 ## Repository layout
 
 ```
-apps/        Deployable apps (added in later phases)
+apps/        Deployable apps: api (NestJS GraphQL), ai (FastAPI + Claude); web apps in Phase 4
 packages/    Shared code; config/ holds TypeScript, ESLint, Prettier and Vitest presets
 infra/       Docker init scripts and config for local databases
 docs/        Guides (local development, later cloud deployment)
@@ -35,7 +35,7 @@ specs/       Feature specs created with Spec Kit (one folder per feature)
 
 ## Getting started
 
-Prerequisites: Node 22 (`nvm use`), pnpm 10, Docker, and later Python 3.13 + uv.
+Prerequisites: Node 24 (`nvm use`), pnpm 10, Docker, Python 3.13 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 pnpm install
@@ -48,6 +48,17 @@ pnpm infra:env && pnpm infra:up
 That starts Postgres, MongoDB and Redis locally. See
 [`docs/local-development.md`](docs/local-development.md) for admin GUIs, connection strings and
 troubleshooting.
+
+```bash
+pnpm --filter @getsetgo/api db:deploy && pnpm --filter @getsetgo/ai db:migrate
+```
+
+```bash
+pnpm dev
+```
+
+That runs the GraphQL API on http://localhost:4000/graphql and the internal AI service. See
+[`docs/backends.md`](docs/backends.md) for example queries and how to turn on Claude.
 
 ```bash
 pnpm lint
@@ -70,7 +81,7 @@ The rules every feature must follow (security, accessibility, testing, stack bou
 
 - [x] Phase 1: Monorepo foundation, shared configs, Spec Kit + constitution
 - [x] Phase 2: Local infrastructure (Docker Compose: Postgres, Mongo, Redis)
-- [ ] Phase 3: Backends (NestJS GraphQL API, FastAPI AI service)
+- [x] Phase 3: Backends (NestJS GraphQL API, FastAPI AI service)
 - [ ] Phase 4: Frontends (two Next.js apps)
 - [ ] Phase 5: Observability & client storage (Sentry, GA, Vercel, IndexedDB, cookies)
 - [ ] Phase 6: CI/CD & cloud deploy guide

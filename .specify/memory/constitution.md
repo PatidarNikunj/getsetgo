@@ -101,7 +101,7 @@ Shared code belongs in `packages/*` and MUST be framework-agnostic unless the pa
 
 ## Technology Stack
 
-- **Monorepo:** pnpm workspaces + Turborepo; Node 22 LTS; Python 3.13 with uv.
+- **Monorepo:** pnpm workspaces + Turborepo; Node 24 LTS; Python 3.13 with uv.
 - **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, MUI, shadcn/ui,
   GraphQL, IndexedDB (via `idb`), httpOnly cookie sessions.
 - **Backend:** NestJS + Apollo Server (GraphQL), FastAPI; Prisma, Mongoose, SQLAlchemy + Alembic, Beanie.

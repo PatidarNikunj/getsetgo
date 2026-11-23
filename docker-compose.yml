@@ -1,0 +1,150 @@
+# Local development infrastructure for getsetgo.
+#
+#   pnpm infra:up       start Postgres, MongoDB and Redis
+#   pnpm infra:tools    also start pgAdmin, Mongo Express and RedisInsight
+#   pnpm infra:down     stop (data is kept in named volumes)
+#   pnpm infra:reset    stop and DELETE all local data
+#
+# Secrets come from .env (copy .env.example). Ports bind to 127.0.0.1 only, so the
+# databases are never exposed to your network (OWASP A05). Apps are added in later phases.
+
+name: getsetgo
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      # Per-service databases and logins, created by infra/postgres/init/01-create-service-dbs.sh
+      API_DB_NAME: ${API_DB_NAME:-getsetgo_api}
+      API_DB_USER: ${API_DB_USER:-getsetgo_api}
+      API_DB_PASSWORD: ${API_DB_PASSWORD:?set API_DB_PASSWORD in .env}
+      AI_DB_NAME: ${AI_DB_NAME:-getsetgo_ai}
+      AI_DB_USER: ${AI_DB_USER:-getsetgo_ai}
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD:?set AI_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+      # Per-service databases and users, created by infra/mongo/init/01-create-service-users.js
+      API_MONGO_DB: ${API_MONGO_DB:-getsetgo_api}
+      API_MONGO_USER: ${API_MONGO_USER:-getsetgo_api}
+      API_MONGO_PASSWORD: ${API_MONGO_PASSWORD:?set API_MONGO_PASSWORD in .env}
+      AI_MONGO_DB: ${AI_MONGO_DB:-getsetgo_ai}
+      AI_MONGO_USER: ${AI_MONGO_USER:-getsetgo_ai}
+      AI_MONGO_PASSWORD: ${AI_MONGO_PASSWORD:?set AI_MONGO_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./infra/mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.8-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    # Password required; data persisted with append-only file; cache-friendly eviction.
+    command:
+      - sh
+      - -c
+      - >-
+        exec redis-server
+        --requirepass "$$REDIS_PASSWORD"
+        --appendonly yes
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---- Optional admin GUIs: `docker compose --profile tools up -d` ----
+
+  pgadmin:
+    image: dpage/pgadmin4:9.19
+    profiles: [tools]
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@getsetgo.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?set PGADMIN_PASSWORD in .env}
+      # Server mode = login required (desktop mode would skip authentication entirely).
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      # Allow the non-routable "admin@getsetgo.local" login used for local development.
+      PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS: "['local']"
+      # Listen on IPv4 inside the container; IPv6 is disabled in many Docker setups.
+      PGADMIN_LISTEN_ADDRESS: 0.0.0.0
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  mongo-express:
+    image: mongo-express:1.0.2-20-alpine3.19
+    profiles: [tools]
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USER:-root}:${MONGO_ROOT_PASSWORD}@mongo:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?set MONGO_EXPRESS_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${MONGO_EXPRESS_PORT:-8081}:8081"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  redisinsight:
+    image: redis/redisinsight:3.10
+    profiles: [tools]
+    restart: unless-stopped
+    environment:
+      RI_REDIS_HOST: redis
+      RI_REDIS_PORT: "6379"
+      RI_REDIS_ALIAS: getsetgo-redis
+      RI_REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:${REDISINSIGHT_PORT:-5540}:5540"
+    volumes:
+      - redisinsight-data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:
+  pgadmin-data:
+  redisinsight-data:

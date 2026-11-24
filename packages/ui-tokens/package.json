@@ -1,0 +1,23 @@
+{
+  "name": "@getsetgo/ui-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens (colors, radius, fonts) shared by both web apps.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@getsetgo/config": "workspace:*",
+    "@types/node": "^24.19.2",
+    "eslint": "^9.39.5",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  }
+}

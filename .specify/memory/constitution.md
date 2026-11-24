@@ -1,5 +1,7 @@
 <!--
 Sync Impact Report
+- 1.0.1 (2026-11-24, PATCH): III clarified: web apps use a per-request nonce CSP, so Next.js
+  Partial Prerendering / Cache Components stay off; Technology Stack: Node 24 LTS.
 - Version change: template → 1.0.0
 - Added principles: I. Spec-Driven, II. Learning-First Stack Boundaries, III. Security by Default (OWASP Top 10),
   IV. Accessible by Default (WCAG 2.2 AA), V. Typed Contracts, VI. Tested, VII. Observable, VIII. Simplicity in Ops
@@ -53,7 +55,8 @@ Shared code belongs in `packages/*` and MUST be framework-agnostic unless the pa
   (Zod / Yup / class-validator / Pydantic); no `dangerouslySetInnerHTML` with untrusted data.
 - **Design (A04):** threats are listed in each plan for auth, payments, file upload, and AI prompts
   (including prompt injection).
-- **Misconfiguration (A05):** strict CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
+- **Misconfiguration (A05):** strict per-request nonce CSP in the web apps (no `'unsafe-inline'`
+  scripts; Partial Prerendering stays off because it can't carry a nonce), HSTS, `X-Content-Type-Options`, `Referrer-Policy`,
   `frame-ancestors 'none'`; GraphQL introspection and playground disabled in production; restrictive CORS.
 - **Components (A06):** Dependabot + `pnpm audit` / `pip-audit` in CI; no unmaintained packages.
 - **Auth (A07):** OAuth via Google/GitHub; short-lived access JWT (≤15 min) + rotating refresh token,
@@ -125,4 +128,4 @@ This constitution supersedes other practices in the repository. Amendments are m
 semantically: MAJOR for removed or redefined principles, MINOR for new principles or sections,
 PATCH for clarifications. Runtime guidance for agents lives in `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-20 | **Last Amended**: 2026-11-20
+**Version**: 1.0.1 | **Ratified**: 2026-11-20 | **Last Amended**: 2026-11-24

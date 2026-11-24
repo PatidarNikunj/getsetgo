@@ -1,0 +1,67 @@
+/*
+ * CSS variables for the design tokens in src/index.ts (kept in sync by src/index.test.ts).
+ * Dark values apply when the OS prefers dark, or when <html data-theme="dark"> is set;
+ * data-theme="light" forces light.
+ */
+:root {
+  --gsg-background: #ffffff;
+  --gsg-surface: #f8fafc;
+  --gsg-foreground: #0f172a;
+  --gsg-muted: #f1f5f9;
+  --gsg-muted-foreground: #475569;
+  --gsg-border: #cbd5e1;
+  --gsg-primary: #4338ca;
+  --gsg-primary-foreground: #ffffff;
+  --gsg-danger: #b91c1c;
+  --gsg-danger-foreground: #ffffff;
+  --gsg-success: #15803d;
+  --gsg-success-foreground: #ffffff;
+  --gsg-info: #1d4ed8;
+  --gsg-info-foreground: #ffffff;
+  --gsg-focus: #4338ca;
+  --gsg-radius: 8px;
+  --gsg-font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --gsg-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --gsg-background: #0b1120;
+    --gsg-surface: #111827;
+    --gsg-foreground: #f1f5f9;
+    --gsg-muted: #1e293b;
+    --gsg-muted-foreground: #cbd5e1;
+    --gsg-border: #475569;
+    --gsg-primary: #a5b4fc;
+    --gsg-primary-foreground: #1e1b4b;
+    --gsg-danger: #fca5a5;
+    --gsg-danger-foreground: #450a0a;
+    --gsg-success: #86efac;
+    --gsg-success-foreground: #052e16;
+    --gsg-info: #93c5fd;
+    --gsg-info-foreground: #172554;
+    --gsg-focus: #a5b4fc;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --gsg-background: #0b1120;
+  --gsg-surface: #111827;
+  --gsg-foreground: #f1f5f9;
+  --gsg-muted: #1e293b;
+  --gsg-muted-foreground: #cbd5e1;
+  --gsg-border: #475569;
+  --gsg-primary: #a5b4fc;
+  --gsg-primary-foreground: #1e1b4b;
+  --gsg-danger: #fca5a5;
+  --gsg-danger-foreground: #450a0a;
+  --gsg-success: #86efac;
+  --gsg-success-foreground: #052e16;
+  --gsg-info: #93c5fd;
+  --gsg-info-foreground: #172554;
+  --gsg-focus: #a5b4fc;
+  color-scheme: dark;
+}

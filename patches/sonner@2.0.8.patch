@@ -1,0 +1,26 @@
+diff --git a/dist/index.js b/dist/index.js
+index 394dbc2272f43b84642b0f9d5cc7eb1eacb0ffb3..b32e058c97e3f06ece5e6cee95280e2fc4736844 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1,5 +1,8 @@
+ 'use client';
+ function __insertCSS(code) {
++  // getsetgo patch: never inject a <style> tag (a strict CSP blocks it). Styles come from
++  // sonner/dist/styles.css, imported as a normal stylesheet.
++  return
+   if (!code || typeof document == 'undefined') return
+   let head = document.head || document.getElementsByTagName('head')[0]
+   let style = document.createElement('style')
+diff --git a/dist/index.mjs b/dist/index.mjs
+index c124f821a68f7070647a5a04441d0caa53689662..c7d31321748807be8c537c5ad24394e1836f5e30 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1,5 +1,8 @@
+ 'use client';
+ function __insertCSS(code) {
++  // getsetgo patch: never inject a <style> tag (a strict CSP blocks it). Styles come from
++  // sonner/dist/styles.css, imported as a normal stylesheet.
++  return
+   if (!code || typeof document == 'undefined') return
+   let head = document.head || document.getElementsByTagName('head')[0]
+   let style = document.createElement('style')

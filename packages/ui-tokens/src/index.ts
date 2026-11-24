@@ -15,6 +15,10 @@ export interface ColorScheme {
   primaryForeground: string;
   danger: string;
   dangerForeground: string;
+  success: string;
+  successForeground: string;
+  info: string;
+  infoForeground: string;
   focus: string;
 }
 
@@ -30,6 +34,10 @@ export const colors: { light: ColorScheme; dark: ColorScheme } = {
     primaryForeground: "#ffffff",
     danger: "#b91c1c",
     dangerForeground: "#ffffff",
+    success: "#15803d",
+    successForeground: "#ffffff",
+    info: "#1d4ed8",
+    infoForeground: "#ffffff",
     focus: "#4338ca",
   },
   dark: {
@@ -43,6 +51,10 @@ export const colors: { light: ColorScheme; dark: ColorScheme } = {
     primaryForeground: "#1e1b4b",
     danger: "#fca5a5",
     dangerForeground: "#450a0a",
+    success: "#86efac",
+    successForeground: "#052e16",
+    info: "#93c5fd",
+    infoForeground: "#172554",
     focus: "#a5b4fc",
   },
 };

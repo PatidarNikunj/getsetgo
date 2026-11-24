@@ -14,6 +14,8 @@ const textPairs: [keyof ColorScheme, keyof ColorScheme][] = [
   ["mutedForeground", "muted"],
   ["primaryForeground", "primary"],
   ["dangerForeground", "danger"],
+  ["successForeground", "success"],
+  ["infoForeground", "info"],
   ["primary", "background"],
   ["danger", "background"],
 ];

@@ -11,6 +11,10 @@ const contentField = (page: Page) => page.getByRole("textbox", { name: "Note", e
 const noteItem = (page: Page, title: string): Locator =>
   page.locator("main li").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 
+/** "Save note" is disabled until React hydrates, so it doubles as an "app is interactive" signal. */
+const waitForHydration = (page: Page) =>
+  expect(page.getByRole("button", { name: "Save note" })).toBeEnabled({ timeout: 30_000 });
+
 async function createNote(page: Page, title: string, content = "Written by Playwright.") {
   await titleField(page).fill(title);
   await contentField(page).fill(content);
@@ -111,6 +115,8 @@ export function notesSuite(appName: string) {
       await page.goto("/", { waitUntil: "commit" });
       await expect(titleField(page)).toBeVisible();
       await titleField(page).fill(title);
+      // Before hydration a native submit would reload the page with the note in the URL.
+      await expect(page.getByRole("button", { name: "Save note" })).toBeDisabled();
       releaseScripts();
 
       // After hydration the typed title must still be there and submit as normal.
@@ -140,6 +146,7 @@ export function notesSuite(appName: string) {
         await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
         await page.goto("/");
         await expect(page.getByRole("heading", { name: "Your notes" })).toBeVisible();
+        await waitForHydration(page);
         await expectAccessible(page);
 
         // Also check the error state of the form.
@@ -155,6 +162,7 @@ export function notesSuite(appName: string) {
       const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
       const light = await background();
 
+      await waitForHydration(page);
       await page.getByRole("button", { name: "Dark" }).click();
       await expect(page.getByRole("button", { name: "Dark" })).toHaveAttribute(
         "aria-pressed",

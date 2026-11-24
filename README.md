@@ -23,10 +23,11 @@ they can be compared side by side; each has a clearly defined home.
 ## Repository layout
 
 ```
-apps/        Deployable apps: api (NestJS GraphQL), ai (FastAPI + Claude); web apps in Phase 4
-packages/    Shared code; config/ holds TypeScript, ESLint, Prettier and Vitest presets
+apps/        api (NestJS GraphQL), ai (FastAPI + Claude), web-material and web-shadcn (Next.js)
+packages/    Shared code: config presets, graphql (typed operations), ui-tokens, web-security, e2e
 infra/       Docker init scripts and config for local databases
-docs/        Guides (local development, later cloud deployment)
+docs/        Guides: local development, backends, frontends (cloud deployment in Phase 6)
+patches/     pnpm patches for third-party packages (each explained in docs)
 scripts/     Repo helper scripts
 specs/       Feature specs created with Spec Kit (one folder per feature)
 .specify/    Spec Kit templates, scripts and the project constitution
@@ -57,14 +58,20 @@ pnpm --filter @getsetgo/api db:deploy && pnpm --filter @getsetgo/ai db:migrate
 pnpm dev
 ```
 
-That runs the GraphQL API on http://localhost:4000/graphql and the internal AI service. See
-[`docs/backends.md`](docs/backends.md) for example queries and how to turn on Claude.
+That starts all four apps with hot reload:
 
-```bash
-pnpm lint
-```
+| App                    | URL                           |
+| ---------------------- | ----------------------------- |
+| web-material (MUI)     | http://localhost:3000         |
+| web-shadcn (shadcn/ui) | http://localhost:3001         |
+| GraphQL API            | http://localhost:4000/graphql |
+| AI service (internal)  | http://localhost:8000/docs    |
 
-Other root scripts: `pnpm build`, `pnpm dev`, `pnpm typecheck`, `pnpm test`, `pnpm format`.
+See [`docs/frontends.md`](docs/frontends.md) and [`docs/backends.md`](docs/backends.md) for how
+they work, and how to turn on Claude summaries.
+
+Other root scripts: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e`, `pnpm build`,
+`pnpm format`.
 
 ## How features get built (Spec-Driven Development)
 
@@ -82,6 +89,6 @@ The rules every feature must follow (security, accessibility, testing, stack bou
 - [x] Phase 1: Monorepo foundation, shared configs, Spec Kit + constitution
 - [x] Phase 2: Local infrastructure (Docker Compose: Postgres, Mongo, Redis)
 - [x] Phase 3: Backends (NestJS GraphQL API, FastAPI AI service)
-- [ ] Phase 4: Frontends (two Next.js apps)
+- [x] Phase 4: Frontends (two Next.js apps, shared Playwright + axe suite)
 - [ ] Phase 5: Observability & client storage (Sentry, GA, Vercel, IndexedDB, cookies)
 - [ ] Phase 6: CI/CD & cloud deploy guide

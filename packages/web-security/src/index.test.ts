@@ -18,12 +18,16 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp["object-src"]).toEqual(["'none'"]);
     expect(csp["frame-ancestors"]).toEqual(["'none'"]);
     expect(csp["upgrade-insecure-requests"]).toEqual([]);
+    expect(csp["style-src"]).toEqual(["'self'", "'nonce-abc'"]);
   });
 
   it("allows eval and websockets only in development", () => {
     const csp = parse(buildContentSecurityPolicy({ nonce: "abc", isDev: true }));
     expect(csp["script-src"]).toContain("'unsafe-eval'");
     expect(csp["connect-src"]).toContain("ws:");
+    // Dev server injects un-nonced <style> tags; scripts stay nonce-only.
+    expect(csp["style-src"]).toEqual(["'self'", "'unsafe-inline'"]);
+    expect(csp["script-src"]).not.toContain("'unsafe-inline'");
     expect(csp["upgrade-insecure-requests"]).toBeUndefined();
   });
 

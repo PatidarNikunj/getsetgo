@@ -73,6 +73,8 @@ const apps = {
     REDIS_URL: `redis://:${env.REDIS_PASSWORD}@${host}:${env.REDIS_PORT}/0`,
     SERVICE_JWT_SECRET: env.SERVICE_JWT_SECRET,
   },
+  "apps/web-material": { API_URL: "http://localhost:4000" },
+  "apps/web-shadcn": { API_URL: "http://localhost:4000" },
   "apps/ai": {
     DATABASE_URL: `postgresql+asyncpg://${pg(env.AI_DB_USER, env.AI_DB_PASSWORD, env.AI_DB_NAME)}`,
     MONGODB_URI: mongo(env.AI_MONGO_USER, env.AI_MONGO_PASSWORD, env.AI_MONGO_DB),

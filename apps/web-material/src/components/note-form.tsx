@@ -8,6 +8,7 @@ import TextField from "@mui/material/TextField";
 import { useFormik } from "formik";
 import { useEffect, useRef } from "react";
 
+import { useHydrated } from "@/hooks/use-hydrated";
 import { describeApolloError } from "@/lib/errors";
 import { type NoteFormValues, noteFormSchema, notesListQuery } from "@/lib/notes";
 import { useAppDispatch } from "@/store/store";
@@ -16,6 +17,7 @@ import { notify } from "@/store/ui-slice";
 /** Formik + Yup: validation runs in the browser first; the API validates again. */
 export function NoteForm() {
   const dispatch = useAppDispatch();
+  const hydrated = useHydrated();
   const [createNote, { loading }] = useMutation(CreateNoteDocument, {
     // Refresh the list after saving so the new note shows up in the right place.
     refetchQueries: [notesListQuery],
@@ -74,7 +76,7 @@ export function NoteForm() {
           helperText={error("content")}
         />
         <div>
-          <Button type="submit" variant="contained" size="large" disabled={loading}>
+          <Button type="submit" variant="contained" size="large" disabled={!hydrated || loading}>
             {loading ? "Saving…" : "Save note"}
           </Button>
         </div>

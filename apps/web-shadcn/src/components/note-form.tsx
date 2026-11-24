@@ -10,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useHydrated } from "@/hooks/use-hydrated";
 import { type NoteFormValues, noteFormSchema } from "@/lib/note-schema";
 import { createNote, notesQuery } from "@/lib/notes";
 
 /** React Hook Form + Zod: validation runs in the browser first; the API validates again. */
 export function NoteForm() {
   const queryClient = useQueryClient();
+  const hydrated = useHydrated();
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
     defaultValues: { title: "", content: "" },
@@ -64,7 +66,7 @@ export function NoteForm() {
           )}
         </Field>
         <div>
-          <Button type="submit" size="lg" disabled={mutation.isPending}>
+          <Button type="submit" size="lg" disabled={!hydrated || mutation.isPending}>
             {mutation.isPending ? "Saving…" : "Save note"}
           </Button>
         </div>

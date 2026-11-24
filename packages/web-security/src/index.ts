@@ -30,7 +30,9 @@ export function buildContentSecurityPolicy({ nonce, isDev, extra = {} }: CspOpti
     ],
     // <style> elements need the nonce (CSS-in-JS inserts them); inline style *attributes*, which
     // component libraries set for positioning and animation, are allowed separately.
-    "style-src": ["'self'", `'nonce-${nonce}'`],
+    // Dev only: the Next.js dev server injects CSS as un-nonced <style> tags for hot reload.
+    // Browsers ignore 'unsafe-inline' when a nonce is present, so dev drops the nonce for styles.
+    "style-src": isDev ? ["'self'", "'unsafe-inline'"] : ["'self'", `'nonce-${nonce}'`],
     "style-src-attr": ["'unsafe-inline'"],
     "img-src": ["'self'", "blob:", "data:"],
     "font-src": ["'self'", "data:"],

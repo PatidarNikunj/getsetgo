@@ -17,9 +17,92 @@ model Note {
   id        String   @id @default(uuid()) @db.Uuid
   title     String   @db.VarChar(200)
   content   String
+  // Every note belongs to one user; deleting the user deletes their notes (FR-014, FR-018).
+  ownerId   String   @map("owner_id") @db.Uuid
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@index([createdAt])
+  @@index([ownerId, createdAt])
   @@map("notes")
+}
+
+// ---------- Sign-in (specs/001-oauth-login/data-model.md) ----------
+
+enum AuthProvider {
+  GOOGLE
+  GITHUB
+  TEST
+}
+
+enum SessionRevokedReason {
+  SIGN_OUT
+  SIGN_OUT_EVERYWHERE
+  REUSE
+  ALLOWLIST
+}
+
+/// A person's account. Only what sign-in needs (FR-021).
+model User {
+  id          String           @id @default(uuid()) @db.Uuid
+  displayName String           @map("display_name") @db.VarChar(200)
+  /// Only a provider-verified email; shown on the account page.
+  email       String?          @db.VarChar(320)
+  avatarUrl   String?          @map("avatar_url") @db.VarChar(2048)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  account     ProviderAccount?
+  sessions    Session[]
+  notes       Note[]
+
+  @@map("users")
+}
+
+/// The Google/GitHub identity behind a user. One per user: accounts are never merged (FR-003).
+model ProviderAccount {
+  id                String       @id @default(uuid()) @db.Uuid
+  userId            String       @unique @map("user_id") @db.Uuid
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          AuthProvider
+  /// Google `sub`, GitHub numeric id, or the test login.
+  providerAccountId String       @map("provider_account_id") @db.VarChar(255)
+  login             String?      @db.VarChar(100)
+  /// Verified email at the last sign-in; the allowlist is re-checked against it on renewal.
+  email             String?      @db.VarChar(320)
+  lastSignInAt      DateTime     @map("last_sign_in_at") @db.Timestamptz(3)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([provider, providerAccountId])
+  @@map("provider_accounts")
+}
+
+/// One signed-in browser. Its refresh tokens form a family for reuse detection (FR-010).
+model Session {
+  id            String                @id @default(uuid()) @db.Uuid
+  userId        String                @map("user_id") @db.Uuid
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt    DateTime              @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  /// lastUsedAt + 30 days (FR-008).
+  expiresAt     DateTime              @map("expires_at") @db.Timestamptz(3)
+  revokedAt     DateTime?             @map("revoked_at") @db.Timestamptz(3)
+  revokedReason SessionRevokedReason? @map("revoked_reason")
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// A rotating refresh token. Only its SHA-256 hash is stored.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  sessionId String    @map("session_id") @db.Uuid
+  session   Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+
+  @@index([sessionId])
+  @@map("refresh_tokens")
 }

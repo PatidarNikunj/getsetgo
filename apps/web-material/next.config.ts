@@ -23,7 +23,11 @@ const nextConfig: NextConfig = {
   ],
   // Same-origin API: cookies stay first-party for the upcoming login, and no CORS is needed.
   async rewrites() {
-    return [{ source: "/api/graphql", destination: `${apiUrl}/graphql` }];
+    return [
+      { source: "/api/graphql", destination: `${apiUrl}/graphql` },
+      // Sign-in, renewal and sign-out: the API sets first-party cookies through this rewrite.
+      { source: "/api/auth/:path*", destination: `${apiUrl}/auth/:path*` },
+    ];
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders({ isDev }) }];

@@ -25,3 +25,13 @@ allowUnusedPatches: true
 # sonner: stop it injecting a <style> tag (strict CSP); see docs/frontends.md.
 patchedDependencies:
   sonner@2.0.8: patches/sonner@2.0.8.patch
+
+# Security overrides for vulnerable transitive dependencies (pnpm audit in CI). Remove each once
+# the parent package ships the fix. Each was verified with the full unit + e2e suites.
+overrides:
+  # GHSA-7589-6fvf-x4pw (ReDoS): prisma pins effect 3.20.0; 3.22.x is a compatible fix.
+  effect@<3.22.1: ^3.22.5
+  # Prototype pollution: @apollo/server 5.5.2 still caps this below the patched 12.0.2.
+  "@graphql-tools/utils@>=10.10.1 <12.0.2": ^12.1.0
+  # DoS via glob amplification, through @nestjs/graphql → ts-morph.
+  minimatch@>=7.0.0 <11.0.1: ^11.0.1

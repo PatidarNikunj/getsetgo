@@ -1,0 +1,78 @@
+# Weekly, grouped dependency updates (OWASP A06). Security updates arrive immediately regardless
+# of this schedule once Dependabot alerts/security updates are enabled (docs/cloud.md).
+version: 2
+updates:
+  - package-ecosystem: npm # the whole pnpm workspace (root lockfile)
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Same idea as pnpm's minimumReleaseAge: let new versions settle before proposing them.
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    groups:
+      nextjs-react:
+        patterns: ["next", "react", "react-dom", "@next/*", "eslint-config-next"]
+      nestjs:
+        patterns: ["@nestjs/*"]
+      sentry:
+        patterns: ["@sentry/*"]
+      prisma:
+        patterns: ["prisma", "@prisma/*"]
+      apollo-graphql:
+        patterns: ["@apollo/*", "graphql", "@graphql-codegen/*"]
+      mui:
+        patterns: ["@mui/*", "@emotion/*"]
+      testing:
+        patterns:
+          [
+            "vitest",
+            "@vitest/*",
+            "jest",
+            "ts-jest",
+            "@playwright/test",
+            "@axe-core/*",
+            "@testing-library/*",
+          ]
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Pinned on purpose until typescript-eslint and eslint-plugin-jsx-a11y support them (CLAUDE.md).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: uv # apps/ai (Python)
+    directory: /apps/ai
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: docker # base images in the Dockerfiles
+    directories: ["/apps/api", "/apps/ai"]
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker-compose # local database images
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]

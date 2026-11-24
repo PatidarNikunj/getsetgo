@@ -29,8 +29,9 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.disable("x-powered-by");
-  // Behind Render/Vercel proxies: trust one hop so rate limiting sees the real client IP.
-  app.set("trust proxy", 1);
+  // Behind proxies (Vercel rewrite → Render load balancer): trust exactly that many hops so rate
+  // limiting sees the real client IP, without letting clients spoof X-Forwarded-For.
+  app.set("trust proxy", config.get("TRUST_PROXY_HOPS", { infer: true }));
   app.useBodyParser("json", { limit: "100kb" });
 
   // CORS: only the configured frontends, with cookies (needed for the upcoming auth feature).

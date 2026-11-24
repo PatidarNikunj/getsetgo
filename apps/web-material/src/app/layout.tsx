@@ -1,9 +1,14 @@
 import "./globals.css";
 
+import { consentFromCookieHeader } from "@getsetgo/consent";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import { ConsentBanner, CookieSettingsButton } from "@/components/consent-banner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 import { Providers } from "./providers";
@@ -17,7 +22,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Reading request headers renders every page per request, so Next.js can apply the CSP nonce
   // that proxy.ts generated. MUI's styles and color-scheme script need it too.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  // Read on the server, so the banner and Google Analytics render correctly without a flash.
+  const consent = consentFromCookieHeader(requestHeaders.get("cookie"));
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -27,7 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#main" className="skip-link">
           Skip to content
         </a>
-        <Providers nonce={nonce}>
+        <Providers nonce={nonce} consent={consent}>
           <header className="site-header">
             <div className="container header-row">
               <p className="brand">
@@ -39,7 +47,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main id="main" tabIndex={-1} className="container main">
             {children}
           </main>
+          <footer className="site-footer">
+            <div className="container footer-row">
+              <p>A getsetgo learning project.</p>
+              <CookieSettingsButton />
+            </div>
+          </footer>
+          <ConsentBanner />
+          <GoogleAnalytics nonce={nonce} />
         </Providers>
+        {/* Cookieless Vercel Web Analytics + Speed Insights, only when deployed on Vercel. */}
+        {process.env.VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

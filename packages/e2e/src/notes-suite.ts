@@ -130,6 +130,47 @@ export function notesSuite(appName: string) {
       await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     });
 
+    test("autosaves a draft and restores it after a reload", async ({ page }) => {
+      const title = uniqueTitle("E2E draft");
+      await page.goto("/");
+      await waitForHydration(page);
+      await titleField(page).fill(title);
+      await contentField(page).fill("Kept in IndexedDB on this device.");
+
+      // Autosave is debounced; reload once IndexedDB has it.
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              new Promise<string>((resolve) => {
+                const open = indexedDB.open("getsetgo");
+                open.onsuccess = () => {
+                  const get = open.result
+                    .transaction("drafts")
+                    .objectStore("drafts")
+                    .get("note-form");
+                  get.onsuccess = () => resolve(JSON.stringify(get.result?.value ?? null));
+                };
+                open.onerror = () => resolve("null");
+              }),
+          ),
+        )
+        .toContain(title);
+
+      await page.reload();
+      await expect(page.getByText(/Draft restored/)).toBeVisible();
+      await expect(titleField(page)).toHaveValue(title);
+      await expect(contentField(page)).toHaveValue("Kept in IndexedDB on this device.");
+
+      await page.getByRole("button", { name: "Discard draft" }).click();
+      await expect(titleField(page)).toHaveValue("");
+      await expect(page.getByText(/Draft restored/)).toBeHidden();
+      await page.reload();
+      await waitForHydration(page);
+      await expect(page.getByText(/Draft restored/)).toBeHidden();
+      await expect(titleField(page)).toHaveValue("");
+    });
+
     test("offers a skip link for keyboard users", async ({ page }) => {
       await page.goto("/");
       await page.keyboard.press("Tab");
@@ -137,6 +178,53 @@ export function notesSuite(appName: string) {
       await expect(skip).toBeFocused();
       await page.keyboard.press("Enter");
       await expect(page).toHaveURL(/#main$/);
+    });
+  });
+
+  test.describe(`${appName}: cookie consent`, () => {
+    test.use({ consentCookie: null });
+
+    test("asks first, and makes no third-party requests before a choice", async ({
+      page,
+      baseURL,
+      expectAccessible,
+    }) => {
+      const thirdParty: string[] = [];
+      page.on("request", (req) => {
+        if (!req.url().startsWith(baseURL!) && !req.url().startsWith("data:")) {
+          thirdParty.push(req.url());
+        }
+      });
+      await page.goto("/");
+      const banner = page.getByRole("region", { name: "Cookie preferences" });
+      await expect(banner).toBeVisible();
+      await waitForHydration(page);
+      await expectAccessible(page);
+      expect(thirdParty).toEqual([]);
+    });
+
+    test("remembers the choice and lets the visitor change it", async ({ page, context }) => {
+      await page.goto("/");
+      await waitForHydration(page);
+      const banner = page.getByRole("region", { name: "Cookie preferences" });
+      await page.getByRole("button", { name: "Accept analytics" }).click();
+      await expect(banner).toBeHidden();
+
+      const consent = (await context.cookies()).find((c) => c.name === "gsg_consent");
+      expect(decodeURIComponent(consent?.value ?? "")).toMatch(/^1\.a1\./);
+      expect(consent?.sameSite).toBe("Lax");
+
+      // Rendered from the cookie on the server: no banner, not even briefly.
+      const html = await (await page.request.get("/")).text();
+      expect(html).not.toContain("Cookie preferences");
+
+      await page.getByRole("button", { name: "Cookie settings" }).click();
+      await expect(banner).toBeVisible();
+      await page.getByRole("button", { name: "Reject analytics" }).click();
+      await expect(banner).toBeHidden();
+      await expect
+        .poll(async () => (await context.cookies()).find((c) => c.name === "gsg_consent")?.value)
+        .toMatch(/^1\.a0\./);
     });
   });
 

@@ -2,6 +2,7 @@
 
 import { useMutation } from "@apollo/client/react";
 import { CreateNoteDocument } from "@getsetgo/graphql";
+import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -9,10 +10,13 @@ import { useFormik } from "formik";
 import { useEffect, useRef } from "react";
 
 import { useHydrated } from "@/hooks/use-hydrated";
+import { useNoteDraft } from "@/hooks/use-note-draft";
 import { describeApolloError } from "@/lib/errors";
 import { type NoteFormValues, noteFormSchema, notesListQuery } from "@/lib/notes";
 import { useAppDispatch } from "@/store/store";
 import { notify } from "@/store/ui-slice";
+
+const timeFormat = new Intl.DateTimeFormat("en", { timeStyle: "short" });
 
 /** Formik + Yup: validation runs in the browser first; the API validates again. */
 export function NoteForm() {
@@ -32,6 +36,7 @@ export function NoteForm() {
       try {
         const { data } = await createNote({ variables: { input: noteFormSchema.cast(values) } });
         resetForm();
+        draft.clear();
         dispatch(notify(`Saved “${data?.createNote.title ?? values.title}”`));
       } catch (error) {
         dispatch(notify(describeApolloError(error), "error"));
@@ -50,12 +55,42 @@ export function NoteForm() {
     if (title || content) void setValues({ title, content }, false);
   }, [setValues]);
 
+  // Autosave to IndexedDB; restore after a refresh if the form is still empty (checked on the
+  // DOM fields, which also reflect anything typed before hydration).
+  const draft = useNoteDraft({
+    isFormEmpty: () => !titleRef.current?.value && !contentRef.current?.value,
+    restore: (values) => void setValues(values, false),
+  });
+  const { ready: draftReady, save: saveDraft } = draft;
+  useEffect(() => {
+    if (draftReady) saveDraft(formik.values);
+  }, [draftReady, saveDraft, formik.values]);
+
   const error = (field: keyof NoteFormValues) =>
     formik.submitCount > 0 && formik.errors[field] ? formik.errors[field] : undefined;
 
   return (
     <form noValidate aria-labelledby="new-note-heading" onSubmit={formik.handleSubmit}>
       <Stack spacing={2}>
+        {draft.restoredAt !== null && (
+          <Alert
+            severity="info"
+            role="status"
+            action={
+              <Button
+                color="inherit"
+                onClick={() => {
+                  formik.resetForm();
+                  draft.clear();
+                }}
+              >
+                Discard draft
+              </Button>
+            }
+          >
+            Draft restored from {timeFormat.format(draft.restoredAt)}.
+          </Alert>
+        )}
         <TextField
           id="note-title"
           label="Title"

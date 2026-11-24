@@ -13,6 +13,7 @@ import type { Request } from "express";
 import { GraphQLError } from "graphql";
 
 import { AiServiceError } from "../ai/ai-client.service";
+import { AnalyticsService } from "../observability/analytics.service";
 import { Public } from "../security/public.decorator";
 import { CreateNoteInput, Note, NoteSummary, NotesPageInput } from "./note.models";
 import { NotesService } from "./notes.service";
@@ -21,7 +22,10 @@ import { NotesService } from "./notes.service";
 @Public()
 @Resolver(() => Note)
 export class NotesResolver {
-  constructor(private readonly notes: NotesService) {}
+  constructor(
+    private readonly notes: NotesService,
+    private readonly analytics: AnalyticsService,
+  ) {}
 
   @Query(() => [Note], { description: "Notes, newest first" })
   notesList(
@@ -36,8 +40,14 @@ export class NotesResolver {
   }
 
   @Mutation(() => Note)
-  createNote(@Args("input") input: CreateNoteInput): Promise<Note> {
-    return this.notes.create(input);
+  async createNote(
+    @Args("input") input: CreateNoteInput,
+    @Context("req") req: Request,
+  ): Promise<Note> {
+    const note = await this.notes.create(input);
+    // Sizes only, never the text itself.
+    this.analytics.track(req, "note_created", { content_length: input.content.length });
+    return note;
   }
 
   @Mutation(() => Boolean)
@@ -51,7 +61,9 @@ export class NotesResolver {
     @Context("req") req: Request,
   ): Promise<Note> {
     try {
-      return await this.notes.summarize(id, req.id as string | undefined);
+      const note = await this.notes.summarize(id, req.id as string | undefined);
+      this.analytics.track(req, "note_summarized", { model: note.summary?.model ?? "unknown" });
+      return note;
     } catch (err) {
       if (err instanceof AiServiceError) {
         throw new GraphQLError(err.message, {

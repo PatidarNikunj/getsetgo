@@ -1,0 +1,26 @@
+{
+  "name": "@getsetgo/drafts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "IndexedDB draft storage (autosave) for forms, built on idb.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@getsetgo/config": "workspace:*",
+    "@types/node": "^24.19.2",
+    "eslint": "^9.39.5",
+    "fake-indexeddb": "^6.2.8",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  },
+  "dependencies": {
+    "idb": "^8.0.4"
+  }
+}

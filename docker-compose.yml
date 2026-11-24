@@ -101,6 +101,7 @@ services:
       MONGODB_DB: ${AI_MONGO_DB:-getsetgo_ai}
       SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:?set SERVICE_JWT_SECRET in .env}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SENTRY_DSN: ${AI_SENTRY_DSN:-}
     # No published port: internal only, reachable from the api container (OWASP A01).
     expose: ["8000"]
     depends_on:
@@ -120,6 +121,9 @@ services:
       AI_SERVICE_URL: http://ai:8000
       SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:?set SERVICE_JWT_SECRET in .env}
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      SENTRY_DSN: ${API_SENTRY_DSN:-}
+      GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-}
+      GA_API_SECRET: ${GA_API_SECRET:-}
     ports:
       - "127.0.0.1:${API_PORT:-4000}:4000"
     depends_on:

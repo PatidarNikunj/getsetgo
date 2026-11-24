@@ -24,9 +24,10 @@ they can be compared side by side; each has a clearly defined home.
 
 ```
 apps/        api (NestJS GraphQL), ai (FastAPI + Claude), web-material and web-shadcn (Next.js)
-packages/    Shared code: config presets, graphql (typed operations), ui-tokens, web-security, e2e
+packages/    Shared code: config presets, graphql, ui-tokens, web-security, consent, drafts,
+             observability, e2e
 infra/       Docker init scripts and config for local databases
-docs/        Guides: local development, backends, frontends (cloud deployment in Phase 6)
+docs/        Guides: local development, backends, frontends, observability (cloud in Phase 6)
 patches/     pnpm patches for third-party packages (each explained in docs)
 scripts/     Repo helper scripts
 specs/       Feature specs created with Spec Kit (one folder per feature)
@@ -90,5 +91,5 @@ The rules every feature must follow (security, accessibility, testing, stack bou
 - [x] Phase 2: Local infrastructure (Docker Compose: Postgres, Mongo, Redis)
 - [x] Phase 3: Backends (NestJS GraphQL API, FastAPI AI service)
 - [x] Phase 4: Frontends (two Next.js apps, shared Playwright + axe suite)
-- [ ] Phase 5: Observability & client storage (Sentry, GA, Vercel, IndexedDB, cookies)
+- [x] Phase 5: Observability & client storage (Sentry, GA + consent, Vercel, IndexedDB drafts)
 - [ ] Phase 6: CI/CD & cloud deploy guide

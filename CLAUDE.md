@@ -54,6 +54,10 @@ pnpm --filter @getsetgo/graphql codegen         # regenerate typed operations fo
 - Python (`apps/ai`): uv for deps, Ruff + mypy strict; run tools with `uv run ...` inside `apps/ai`.
 - Web apps: strict nonce CSP (Cache Components / PPR are off on purpose). Anything that injects
   `<script>` or `<style>` at runtime must receive the nonce; see `docs/frontends.md`.
+- Observability (Sentry, GA) is off without keys. Never send note text, cookies or tokens to
+  Sentry/GA: keep `dataCollection` locked down and GA consent-gated (see `docs/observability.md`).
+- The API keeps small copies of `@getsetgo/consent` and the Sentry scrubber (it can't load
+  TypeScript-source packages at runtime); `consent.spec.ts` checks they agree.
 - Web apps share accessible names so `packages/e2e` can test both; keep them in sync.
 - New GraphQL resolvers are denied unless marked `@Public()` (temporary) or authenticated.
 - TypeScript `strict`; no `any` without a justifying comment. Pinned to TypeScript 6.0 and ESLint 9

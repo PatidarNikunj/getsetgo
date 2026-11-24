@@ -23,7 +23,7 @@ import { NotesModule } from "./notes/notes.module";
 import { ObservabilityModule } from "./observability/observability.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DenyByDefaultGuard } from "./security/deny-by-default.guard";
-import { stripAuthQuery } from "./observability/scrub";
+import { redactAuthRequest } from "./observability/scrub";
 import { depthLimit } from "./security/depth-limit.rule";
 import { GqlThrottlerGuard } from "./security/gql-throttler.guard";
 
@@ -50,20 +50,31 @@ const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/;
           return id;
         },
         // Sign-in callback URLs carry a one-time code: log the path only.
-        serializers: {
-          req: (req: { url?: string } & Record<string, unknown>) => ({
-            ...req,
-            url: req.url ? stripAuthQuery(req.url) : req.url,
-          }),
-        },
+        serializers: { req: redactAuthRequest },
         // Never log credentials (OWASP A09).
-        redact: ["req.headers.authorization", "req.headers.cookie", 'res.headers["set-cookie"]'],
+        // Location/Referer can carry sign-in state and one-time codes (specs/001-oauth-login D13).
+        redact: [
+          "req.headers.authorization",
+          "req.headers.cookie",
+          "req.headers.referer",
+          'res.headers["set-cookie"]',
+          "res.headers.location",
+        ],
         transport: isProduction
           ? undefined
           : { target: "pino-pretty", options: { singleLine: true } },
       },
     }),
-    ThrottlerModule.forRoot([{ name: "default", ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => [
+        {
+          name: "default",
+          ttl: 60_000,
+          limit: config.get("RATE_LIMIT_PER_MINUTE", { infer: true }),
+        },
+      ],
+    }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({

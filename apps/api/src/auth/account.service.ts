@@ -4,7 +4,7 @@ import type { Model } from "mongoose";
 
 import { CacheService } from "../cache/cache.service";
 import { NoteSummaryDoc } from "../notes/note-summary.schema";
-import { notesCachePrefix } from "../notes/notes.service";
+import { notesCacheGroup } from "../notes/notes.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SessionsService } from "./sessions.service";
 
@@ -31,7 +31,7 @@ export class AccountService {
     // 3. The user row; provider account, sessions, refresh tokens and notes cascade.
     await this.prisma.user.deleteMany({ where: { id: userId } });
     // 4. Cached note lists.
-    await this.cache.invalidate(notesCachePrefix(userId));
+    await this.cache.bumpVersion(notesCacheGroup(userId));
     this.logger.log({ event: "auth.account.deleted", userId, notes: noteIds.length });
   }
 }

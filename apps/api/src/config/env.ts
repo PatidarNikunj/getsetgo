@@ -63,6 +63,8 @@ export const envSchema = z
     // Proxies in front of the API whose X-Forwarded-For can be trusted, so rate limiting sees the
     // real client IP. Local/Docker: 1. Render behind the Vercel rewrite: 2 (Vercel, Render's LB).
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+    // Requests per minute per client IP (GraphQL and REST). Raised for local e2e runs only.
+    RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).default(120),
 
     CORS_ORIGINS: z
       .string()

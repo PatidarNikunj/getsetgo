@@ -17,8 +17,8 @@ import { NoteSummaryDoc } from "./note-summary.schema";
 const LIST_CACHE_TTL_SECONDS = 60;
 
 /** Cached note pages are per owner, so one user's list can never be served to another. */
-export function notesCachePrefix(ownerId: string): string {
-  return `notes:list:${ownerId}:`;
+export function notesCacheGroup(ownerId: string): string {
+  return `notes:list:${ownerId}`;
 }
 
 type CachedNote = Omit<Note, "createdAt" | "updatedAt" | "summary"> & {
@@ -54,10 +54,12 @@ export class NotesService implements OnApplicationBootstrap {
     }
   }
 
-  /** Newest first. Pages are cached in Redis and dropped whenever one of the owner's notes changes. */
+  /** Newest first. Pages are cached in Redis until one of the owner's notes changes. */
   async list(ownerId: string, { take, skip }: NotesPageInput): Promise<Note[]> {
-    const key = `${notesCachePrefix(ownerId)}${take}:${skip}`;
-    const cached = await this.cache.get<CachedNote[]>(key);
+    // Versioned keys: a write bumps the version, so a slower read can't re-cache stale data.
+    const version = await this.cache.version(notesCacheGroup(ownerId));
+    const key = `${notesCacheGroup(ownerId)}:v${version}:${take}:${skip}`;
+    const cached = version === "unavailable" ? undefined : await this.cache.get<CachedNote[]>(key);
     if (cached) {
       return cached.map((n) => ({
         ...n,
@@ -71,7 +73,7 @@ export class NotesService implements OnApplicationBootstrap {
       take,
       skip,
     });
-    await this.cache.set(key, notes, LIST_CACHE_TTL_SECONDS);
+    if (version !== "unavailable") await this.cache.set(key, notes, LIST_CACHE_TTL_SECONDS);
     return notes;
   }
 
@@ -89,7 +91,7 @@ export class NotesService implements OnApplicationBootstrap {
     });
     if (!owner) throw new UnauthorizedException("Sign in required");
     const note = await this.prisma.note.create({ data: { ...input, ownerId } });
-    await this.cache.invalidate(notesCachePrefix(ownerId));
+    await this.cache.bumpVersion(notesCacheGroup(ownerId));
     return note;
   }
 
@@ -97,7 +99,7 @@ export class NotesService implements OnApplicationBootstrap {
     const { count } = await this.prisma.note.deleteMany({ where: { id, ownerId } });
     if (count === 0) throw new NotFoundException("Note not found");
     await this.summaries.deleteMany({ noteId: id });
-    await this.cache.invalidate(notesCachePrefix(ownerId));
+    await this.cache.bumpVersion(notesCacheGroup(ownerId));
     return true;
   }
 

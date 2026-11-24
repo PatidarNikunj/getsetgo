@@ -14,6 +14,12 @@ export function stripAuthQuery(url: string): string {
   return /(^|\/)auth\//.test(path) ? path : url;
 }
 
+/** pino request serializer: /auth/* requests are logged without their query (URL or parsed). */
+export function redactAuthRequest<T extends { url?: string; query?: unknown }>(req: T): T {
+  if (!req.url || stripAuthQuery(req.url) === req.url) return req;
+  return { ...req, url: stripAuthQuery(req.url), query: "[redacted]" };
+}
+
 /** Sentry events: remove query strings from auth URLs (dataCollection already drops most). */
 export function scrubAuthUrls<T extends { request?: { url?: string; query_string?: unknown } }>(
   event: T,

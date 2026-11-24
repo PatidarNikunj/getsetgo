@@ -280,6 +280,9 @@ export class AuthController {
       return;
     }
     noStore(res);
+    // Helmet's default "no-referrer" makes browsers send `Origin: null` on the form post, which
+    // the CSRF check rightly refuses. Same policy as the web apps' pages.
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.type("html").send(testAuthorizePage({ redirectUri, state, challenge }));
   }
 

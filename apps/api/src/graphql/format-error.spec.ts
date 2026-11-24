@@ -35,6 +35,18 @@ describe("formatGraphQLError", () => {
     expect(result.extensions).toEqual({ code: "NOT_FOUND" });
   });
 
+  it("maps the throttler's 429 to TOO_MANY_REQUESTS (not an internal error)", () => {
+    const result = formatGraphQLError(
+      {
+        message: "ThrottlerException: Too Many Requests",
+        extensions: { code: "INTERNAL_SERVER_ERROR", status: 429 },
+      },
+      { isProduction: true },
+    );
+    expect(result.extensions).toEqual({ code: "TOO_MANY_REQUESTS" });
+    expect(result.message).toBe("ThrottlerException: Too Many Requests");
+  });
+
   it("hides unexpected errors in production", () => {
     const result = formatGraphQLError(
       {

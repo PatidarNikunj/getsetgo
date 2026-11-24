@@ -32,7 +32,8 @@ function setup() {
   const cache = {
     get: jest.fn().mockResolvedValue(undefined),
     set: jest.fn(),
-    invalidate: jest.fn(),
+    version: jest.fn().mockResolvedValue("3"),
+    bumpVersion: jest.fn(),
   };
   const ai = {
     summarize: jest.fn().mockResolvedValue({
@@ -81,17 +82,17 @@ describe("NotesService", () => {
       take: 20,
       skip: 0,
     });
-    expect(cache.set).toHaveBeenCalledWith(`notes:list:${OWNER}:20:0`, [note], 60);
+    expect(cache.set).toHaveBeenCalledWith(`notes:list:${OWNER}:v3:20:0`, [note], 60);
   });
 
-  it("invalidates cached lists when a note is created or deleted", async () => {
+  it("bumps the owner's cache version when a note is created or deleted", async () => {
     const { service, cache, summaries } = setup();
 
     await service.create(OWNER, { title: "T", content: "C" });
     await service.delete(OWNER, note.id);
 
-    expect(cache.invalidate).toHaveBeenCalledTimes(2);
-    expect(cache.invalidate).toHaveBeenCalledWith(`notes:list:${OWNER}:`);
+    expect(cache.bumpVersion).toHaveBeenCalledTimes(2);
+    expect(cache.bumpVersion).toHaveBeenCalledWith(`notes:list:${OWNER}`);
     expect(summaries.deleteMany).toHaveBeenCalledWith({ noteId: note.id });
   });
 
@@ -102,6 +103,15 @@ describe("NotesService", () => {
 
     await expect(service.get(OWNER, note.id)).rejects.toBeInstanceOf(NotFoundException);
     await expect(service.delete(OWNER, note.id)).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it("skips the cache entirely when Redis is unavailable", async () => {
+    const { service, prisma, cache } = setup();
+    cache.version.mockResolvedValue("unavailable");
+    await service.list(OWNER, { take: 20, skip: 0 });
+    expect(cache.get).not.toHaveBeenCalled();
+    expect(cache.set).not.toHaveBeenCalled();
+    expect(prisma.note.findMany).toHaveBeenCalled();
   });
 
   it("only ever queries the caller's notes (another user's note looks missing)", async () => {

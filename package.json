@@ -24,7 +24,8 @@
     "infra:logs": "docker compose logs -f",
     "infra:ps": "docker compose ps",
     "stack:up": "docker compose --profile apps up -d --build --wait",
-    "stack:down": "docker compose --profile apps down"
+    "stack:down": "docker compose --profile apps down",
+    "test:e2e": "turbo run test:e2e --concurrency=1"
   },
   "devDependencies": {
     "@getsetgo/config": "workspace:*",

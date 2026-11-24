@@ -36,9 +36,9 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
     "@getsetgo/config": "workspace:*",
-    "@playwright/test": "^1.65.1",
+    "@getsetgo/e2e": "workspace:*",
+    "@playwright/test": "1.65.1",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.13",

@@ -35,9 +35,9 @@
     "zustand": "^5.1.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
     "@getsetgo/config": "workspace:*",
-    "@playwright/test": "^1.65.1",
+    "@getsetgo/e2e": "workspace:*",
+    "@playwright/test": "1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",

@@ -91,3 +91,27 @@ export function safeReturnTo(value: unknown): string {
     ? value
     : "/";
 }
+
+/**
+ * Run a GraphQL call; if the access cookie expired, renew once and retry. If renewal fails, call
+ * `onSignedOut` (the apps send the user to /sign-in; unsaved drafts stay in IndexedDB).
+ */
+export async function withSessionRetry<T>(
+  call: () => Promise<T>,
+  onSignedOut: () => void = goToSignIn,
+): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    if (!isUnauthenticated(error)) throw error;
+    if (await refreshSession()) return call();
+    onSignedOut();
+    throw error;
+  }
+}
+
+/** Browser only: full navigation to the sign-in page, remembering where the user was. */
+export function goToSignIn(): void {
+  if (typeof window === "undefined") return;
+  window.location.assign(signInUrl(window.location.pathname + window.location.search));
+}

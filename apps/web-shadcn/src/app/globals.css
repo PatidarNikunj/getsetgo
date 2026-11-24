@@ -126,3 +126,8 @@
     }
   }
 }
+
+/* reCAPTCHA v3 badge: hidden because the sign-in page shows the required notice as text. */
+.grecaptcha-badge {
+  visibility: hidden;
+}

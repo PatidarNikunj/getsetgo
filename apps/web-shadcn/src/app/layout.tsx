@@ -5,10 +5,13 @@ import { consentFromCookieHeader } from "@getsetgo/consent";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { headers } from "next/headers";
+import Link from "next/link";
 
 import { ConsentBanner, CookieSettingsButton } from "@/components/consent-banner";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
+import { getViewer } from "@/lib/session.server";
 
 import { Providers } from "./providers";
 
@@ -25,6 +28,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
   // Read on the server, so the banner and Google Analytics render correctly without a flash.
   const consent = consentFromCookieHeader(requestHeaders.get("cookie"));
+  const viewer = await getViewer();
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
@@ -39,9 +43,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <header className="border-b">
             <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
               <p className="text-lg font-semibold">
-                getsetgo <span className="text-muted-foreground">· shadcn/ui</span>
+                <Link href="/">
+                  getsetgo <span className="text-muted-foreground">· shadcn/ui</span>
+                </Link>
               </p>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                {viewer && <UserMenu viewer={viewer} />}
+              </div>
             </div>
           </header>
           <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">

@@ -47,3 +47,33 @@ describe("helpers", () => {
     expect(safeReturnTo("/sign-in?x")).toBe("/");
   });
 });
+
+describe("withSessionRetry", () => {
+  it("renews once and retries after UNAUTHENTICATED", async () => {
+    const call = vi
+      .fn()
+      .mockRejectedValueOnce(new GraphQLRequestError("x", "UNAUTHENTICATED"))
+      .mockResolvedValueOnce("ok");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    const { withSessionRetry } = await import("./session");
+    await expect(withSessionRetry(call, vi.fn())).resolves.toBe("ok");
+    expect(call).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  it("gives up and signs out when renewal fails", async () => {
+    const error = new GraphQLRequestError("x", "UNAUTHENTICATED");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
+    const { withSessionRetry } = await import("./session");
+    const onSignedOut = vi.fn();
+    await expect(withSessionRetry(() => Promise.reject(error), onSignedOut)).rejects.toBe(error);
+    expect(onSignedOut).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("passes other errors through untouched", async () => {
+    const { withSessionRetry } = await import("./session");
+    const error = new GraphQLRequestError("x", "NOT_FOUND");
+    await expect(withSessionRetry(() => Promise.reject(error), vi.fn())).rejects.toBe(error);
+  });
+});

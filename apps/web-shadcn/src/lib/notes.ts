@@ -7,6 +7,7 @@ import {
   NotesListDocument,
   requestGraphQL,
   SummarizeNoteDocument,
+  withSessionRetry,
 } from "@getsetgo/graphql";
 import { queryOptions } from "@tanstack/react-query";
 
@@ -22,17 +23,28 @@ export const notesQuery = {
     queryOptions({
       queryKey: notesQuery.key,
       queryFn: async (): Promise<Note[]> =>
-        (await requestGraphQL(GRAPHQL_PATH, NotesListDocument, { page: { take: 50 } })).notesList,
+        (
+          await withSessionRetry(() =>
+            requestGraphQL(GRAPHQL_PATH, NotesListDocument, { page: { take: 50 } }),
+          )
+        ).notesList,
       // Hydrated server data counts as fresh for 30 s, so the browser doesn't refetch right away.
       staleTime: 30_000,
     }),
 };
 
+// Every call renews an expired session once and retries (see withSessionRetry).
 export const createNote = (input: CreateNoteMutationVariables["input"]) =>
-  requestGraphQL(GRAPHQL_PATH, CreateNoteDocument, { input }).then((d) => d.createNote);
+  withSessionRetry(() => requestGraphQL(GRAPHQL_PATH, CreateNoteDocument, { input })).then(
+    (d) => d.createNote,
+  );
 
 export const deleteNote = (id: string) =>
-  requestGraphQL(GRAPHQL_PATH, DeleteNoteDocument, { id }).then((d) => d.deleteNote);
+  withSessionRetry(() => requestGraphQL(GRAPHQL_PATH, DeleteNoteDocument, { id })).then(
+    (d) => d.deleteNote,
+  );
 
 export const summarizeNote = (id: string) =>
-  requestGraphQL(GRAPHQL_PATH, SummarizeNoteDocument, { id }).then((d) => d.summarizeNote);
+  withSessionRetry(() => requestGraphQL(GRAPHQL_PATH, SummarizeNoteDocument, { id })).then(
+    (d) => d.summarizeNote,
+  );

@@ -1,5 +1,6 @@
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -7,10 +8,14 @@ import { NoteForm } from "@/components/note-form";
 import { NotesList } from "@/components/notes-list";
 import { PreloadQuery } from "@/lib/apollo.server";
 import { notesListQuery } from "@/lib/notes";
+import { getViewer } from "@/lib/session.server";
 
 export default async function NotesPage() {
-  // Notes are per-request data (and per-user once login exists): never prerender them.
+  // Notes are per-request, per-user data: never prerender them.
   await connection();
+  // proxy.ts only lets visitors with a session through; still ask the API (e.g. the account was
+  // just deleted in another browser).
+  if (!(await getViewer())) redirect("/sign-in?error=expired");
   return (
     <div className="page">
       <section aria-labelledby="new-note-heading">

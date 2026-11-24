@@ -33,7 +33,8 @@ is the source of truth for stack boundaries, security (OWASP Top 10), accessibil
 pnpm install          # install everything
 pnpm lint             # ESLint across the workspace (Turborepo)
 pnpm typecheck        # tsc --noEmit across the workspace
-pnpm test             # all tests
+pnpm test             # all unit tests
+pnpm test:e2e         # build web apps + Playwright/axe suite (needs the API running)
 pnpm build            # build all apps/packages
 pnpm format           # Prettier
 pnpm infra:env        # create .env with random local passwords
@@ -44,12 +45,16 @@ pnpm --filter <name> <script>   # run in a single package
 pnpm --filter @getsetgo/api test:e2e            # api e2e tests (needs infra:up)
 pnpm --filter @getsetgo/api db:migrate          # new Prisma migration after editing schema.prisma
 pnpm --filter @getsetgo/ai openapi && pnpm --filter @getsetgo/api ai:types   # refresh api↔ai contract
+pnpm --filter @getsetgo/graphql codegen         # regenerate typed operations for the web apps
 ```
 
 ## Conventions
 
 - Node 24 is required (NestJS 12 is ESM-only; Jest runs with `--experimental-vm-modules`).
 - Python (`apps/ai`): uv for deps, Ruff + mypy strict; run tools with `uv run ...` inside `apps/ai`.
+- Web apps: strict nonce CSP (Cache Components / PPR are off on purpose). Anything that injects
+  `<script>` or `<style>` at runtime must receive the nonce; see `docs/frontends.md`.
+- Web apps share accessible names so `packages/e2e` can test both; keep them in sync.
 - New GraphQL resolvers are denied unless marked `@Public()` (temporary) or authenticated.
 - TypeScript `strict`; no `any` without a justifying comment. Pinned to TypeScript 6.0 and ESLint 9
   until `typescript-eslint` and `eslint-plugin-jsx-a11y` support newer majors.

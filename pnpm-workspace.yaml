@@ -1,14 +1,16 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
 
-# Supply-chain hardening (OWASP A06/A08): don't install versions published in the last 24h.
-minimumReleaseAge: 1440
-
-# Only these packages may run install scripts; extend deliberately when adding deps.
-onlyBuiltDependencies: []
-
-# Reviewed and not needed: protobufjs only prints a notice; @parcel/watcher ships prebuilt binaries.
 ignoredBuiltDependencies:
   - "@apollo/protobufjs"
   - "@parcel/watcher"
+  - sharp
+  - unrs-resolver
+
+minimumReleaseAge: 1440
+
+onlyBuiltDependencies: []
+
+patchedDependencies:
+  sonner@2.0.8: patches/sonner@2.0.8.patch

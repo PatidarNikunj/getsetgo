@@ -1,0 +1,36 @@
+# Operations used by both web apps. After editing, run: pnpm --filter @getsetgo/graphql codegen
+
+fragment NoteFields on Note {
+  id
+  title
+  content
+  createdAt
+  summary {
+    summary
+    keyPoints
+    model
+    createdAt
+  }
+}
+
+query NotesList($page: NotesPageInput) {
+  notesList(page: $page) {
+    ...NoteFields
+  }
+}
+
+mutation CreateNote($input: CreateNoteInput!) {
+  createNote(input: $input) {
+    ...NoteFields
+  }
+}
+
+mutation DeleteNote($id: ID!) {
+  deleteNote(id: $id)
+}
+
+mutation SummarizeNote($id: ID!) {
+  summarizeNote(id: $id) {
+    ...NoteFields
+  }
+}

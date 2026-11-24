@@ -104,7 +104,8 @@ jobs:
         working-directory: apps/ai
         run: |
           uv export --frozen --no-dev --no-hashes --format requirements-txt > /tmp/requirements.txt
-          uvx pip-audit --strict --requirement /tmp/requirements.txt
+          # Audit on the project's Python (apps/ai/.python-version); some deps don't support 3.14 yet.
+          uvx --python 3.13 pip-audit --strict --requirement /tmp/requirements.txt
 
   docker:
     name: docker images build

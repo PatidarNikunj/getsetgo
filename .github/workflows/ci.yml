@@ -98,6 +98,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # setup-node v5 turns on pnpm caching by itself (packageManager in package.json). This
+          # job never installs, so there's nothing to cache and the post step would fail.
+          package-manager-cache: false
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - name: npm packages (production dependencies, high and critical)
         run: pnpm audit --prod --audit-level=high

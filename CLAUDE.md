@@ -62,6 +62,11 @@ pnpm --filter @getsetgo/graphql codegen         # regenerate typed operations fo
 - New GraphQL resolvers are denied unless marked `@Public()` (temporary) or authenticated.
 - TypeScript `strict`; no `any` without a justifying comment. Pinned to TypeScript 6.0 and ESLint 9
   until `typescript-eslint` and `eslint-plugin-jsx-a11y` support newer majors.
+- CI (`.github/workflows/ci.yml`) must stay green: it also fails on stale generated code and on
+  `pnpm audit` high/critical findings. Security `overrides` in `pnpm-workspace.yaml` are temporary;
+  remove them when the parent package ships the fix.
+- Deploys: Vercel (web apps, `vercel.json`) and Render (`render.yaml`) via their Git integrations;
+  see `docs/cloud.md`. Never put secrets in either file.
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`).
 - Never commit `.env` files or secrets; add new variables to the relevant `.env.example`.
 - New dependencies that need install scripts must be added to `onlyBuiltDependencies` in

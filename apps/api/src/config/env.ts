@@ -32,6 +32,10 @@ export const envSchema = z.object({
     .or(z.literal("").transform(() => undefined)),
   GA_MP_ENDPOINT: z.url().default("https://www.google-analytics.com/mp/collect"),
 
+  // Proxies in front of the API whose X-Forwarded-For can be trusted, so rate limiting sees the
+  // real client IP. Local/Docker: 1. Render behind the Vercel rewrite: 2 (Vercel, Render's LB).
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+
   CORS_ORIGINS: z
     .string()
     .default("")

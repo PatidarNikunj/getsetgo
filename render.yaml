@@ -1,0 +1,83 @@
+# Render Blueprint: the NestJS API and the FastAPI AI service, built from their Dockerfiles.
+# Render → New → Blueprint → pick this repo. Values marked `sync: false` are asked for once in the
+# dashboard (secrets never go in this file). Step-by-step guide: docs/cloud.md.
+#
+# Free plan: services sleep after 15 minutes idle (first request then takes ~30-60 s), and
+# migrations run when each container starts (the pre-deploy step is a paid feature).
+# To upgrade, change `plan: free` to `plan: starter` and move the migration into
+# `preDeployCommand`.
+
+envVarGroups:
+  # Shared by both services so api's tokens verify in ai. Render generates a random value once.
+  - name: getsetgo-service-auth
+    envVars:
+      - key: SERVICE_JWT_SECRET
+        generateValue: true
+
+services:
+  - type: web
+    name: getsetgo-api
+    runtime: docker
+    plan: free
+    region: frankfurt # keep the databases (Neon, Atlas, Upstash) in the same region
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    # Deploy only after GitHub CI passes on main.
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        ["apps/api/**", "packages/config/**", "packages/consent/**", "pnpm-lock.yaml", "patches/**"]
+    envVars:
+      - fromGroup: getsetgo-service-auth
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # Vercel rewrite → Render load balancer → API: trust both hops for the client IP.
+      - key: TRUST_PROXY_HOPS
+        value: "2"
+      - key: DATABASE_URL # Neon, database getsetgo_api (…?sslmode=require)
+        sync: false
+      - key: MONGODB_URI # Atlas, user limited to getsetgo_api
+        sync: false
+      - key: REDIS_URL # Upstash, rediss://…
+        sync: false
+      - key: AI_SERVICE_URL # https://getsetgo-ai.onrender.com (the ai service's URL)
+        sync: false
+      - key: CORS_ORIGINS # the two Vercel URLs, comma-separated
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: GA_MEASUREMENT_ID
+        sync: false
+      - key: GA_API_SECRET
+        sync: false
+
+  # Internal service, but the free plan has no private services, so it has a public URL.
+  # Every route except /health requires a 60-second service JWT signed by the API.
+  - type: web
+    name: getsetgo-ai
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./apps/ai/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths: ["apps/ai/**"]
+    envVars:
+      - fromGroup: getsetgo-service-auth
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL # Neon, database getsetgo_ai: postgresql+asyncpg://…?ssl=require
+        sync: false
+      - key: MONGODB_URI # Atlas, user limited to getsetgo_ai
+        sync: false
+      - key: MONGODB_DB
+        value: getsetgo_ai
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false

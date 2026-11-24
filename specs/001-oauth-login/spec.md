@@ -36,7 +36,9 @@ sees A's note and cannot open, summarize or delete it, even by guessing its iden
    if the note did not exist, and nothing about A's note is revealed.
 5. **Given** a signed-in user, **When** they summarize one of their notes, **Then** the AI summary is
    created and shown only to them.
-6. **Given** a visitor who cancels or denies the request at the provider, **When** they return, **Then**
+6. **Given** a person who is not on the allowlist, **When** they complete sign-in at the provider,
+   **Then** no account is created and they see a friendly "this app is invite-only" message.
+7. **Given** a visitor who cancels or denies the request at the provider, **When** they return, **Then**
    they see the sign-in page again with a clear, non-technical message and can try again.
 
 ---
@@ -100,8 +102,13 @@ fresh, empty account.
 
 ### Edge Cases
 
-- **Ownerless notes**: notes created before this feature have no owner. They must never be shown to any
-  signed-in user, and are handled as decided in FR-019.
+- **Ownerless notes**: notes created before this feature have no owner. They are deleted (with their
+  summaries) when the feature is released, and never shown to anyone (FR-019).
+- **Removed from the allowlist**: a signed-in user who is removed loses access within the short
+  credential lifetime and can't sign in again; their data stays until they're re-added or the owner
+  deletes it.
+- **Allowlist matching**: email matching ignores letter case; for GitHub, the stable provider username
+  or email can be listed. Only emails the provider marks as verified count.
 - **Same person, two providers**: a person who signs in with Google one day and GitHub the next (even
   with the same email address) gets two separate accounts. Accounts are never merged automatically by
   email, because an unverified email match could hand one person's notes to another.
@@ -169,9 +176,12 @@ fresh, empty account.
   if available, provider, account creation date).
 - **FR-018**: Users MUST be able to permanently delete their account; this MUST delete their notes, AI
   summaries and sessions, and sign them out everywhere.
-- **FR-019**: Notes created before this feature (no owner) MUST never be visible to any user and MUST be
-  [NEEDS CLARIFICATION: what happens to existing ownerless notes? A: deleted when the feature ships; B: kept hidden until an administrator removes them; C: assigned to the first account that signs in].
-- **FR-020**: Who may create an account MUST be [NEEDS CLARIFICATION: open sign-up or restricted? A: anyone with a Google or GitHub account; B: only an allowlist of emails/usernames set by the owner; C: anyone, but AI summaries only for allowlisted accounts].
+- **FR-019**: Notes created before this feature (no owner) MUST never be visible to any user, and MUST
+  be permanently deleted, together with their AI summaries, when this feature is released.
+- **FR-020**: Only people on an owner-maintained allowlist (provider email addresses or provider
+  usernames) MUST be able to create an account or sign in. Anyone else MUST see a friendly "this app is
+  invite-only" message and no account is created. Removing someone from the allowlist MUST stop them
+  from signing in again and end their existing sessions within the short credential lifetime.
 - **FR-021**: The system MUST store only the account details needed for this feature (provider,
   provider account identifier, display name, email if provided, avatar link if provided, timestamps).
 
@@ -222,6 +232,7 @@ fresh, empty account.
 - Each web app has its own sessions; signing in to web-material does not sign you in to web-shadcn.
 - 30 days of inactivity and a 15-minute maximum for the short-lived credential are reasonable defaults
   for a personal notes app; they can be tuned later.
+- The allowlist is configuration managed by the owner (no admin screen in this feature).
 - Multi-factor authentication is delegated to the providers (Google/GitHub enforce their own).
 - No admin interface is built in this feature; owner-only operations (if any) are done through
   configuration.

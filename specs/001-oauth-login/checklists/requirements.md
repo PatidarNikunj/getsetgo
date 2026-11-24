@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain — 2 open (FR-019 ownerless notes, FR-020 who may sign up)
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,6 +31,8 @@
 
 ## Notes
 
+- Validation pass 2 (2026-11-24): clarifications resolved by the owner (FR-019: delete ownerless
+  notes at release; FR-020: invite-only allowlist). All items pass.
 - Validation pass 1: everything passes except the two clarification markers, which need the owner's
   decision (data handling and access policy have no safe default).
 - Kept deliberately technology-free: providers (Google, GitHub) and standards (WCAG 2.2) are

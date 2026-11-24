@@ -6,6 +6,7 @@ import {
   ApolloNextAppProvider,
   InMemoryCache,
 } from "@apollo/client-integration-nextjs";
+import type { Consent } from "@getsetgo/consent";
 import { GRAPHQL_PATH } from "@getsetgo/graphql";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -46,8 +47,16 @@ function ThemeSync() {
   return null;
 }
 
-export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
-  const [store] = useState(makeStore);
+export function Providers({
+  children,
+  nonce,
+  consent,
+}: {
+  children: ReactNode;
+  nonce?: string;
+  consent: Consent | null;
+}) {
+  const [store] = useState(() => makeStore({ consent }));
   return (
     // MUI's Emotion styles are <style> tags: they need the CSP nonce.
     <AppRouterCacheProvider options={{ key: "mui", nonce }}>

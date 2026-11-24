@@ -4,6 +4,17 @@ import { expect, type Page, test as base } from "@playwright/test";
 /** WCAG 2.2 A + AA rules (the constitution's target). */
 export const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
+/** Consent cookie value meaning "decided, analytics rejected" (see @getsetgo/consent). */
+export const REJECTED_CONSENT = encodeURIComponent("1.a0.2026-01-01T00:00:00.000Z");
+
+interface Options {
+  /**
+   * Consent cookie set before each test. Defaults to "analytics rejected", so the consent
+   * banner doesn't cover the page; consent tests use `test.use({ consentCookie: null })`.
+   */
+  consentCookie: string | null;
+}
+
 interface Fixtures {
   /** CSP violations and console errors seen during the test; checked automatically at the end. */
   pageProblems: string[];
@@ -11,7 +22,20 @@ interface Fixtures {
   expectAccessible: (page: Page) => Promise<void>;
 }
 
-export const test = base.extend<Fixtures>({
+export const test = base.extend<Fixtures & Options>({
+  consentCookie: [REJECTED_CONSENT, { option: true }],
+
+  context: async ({ context, consentCookie, baseURL }, use) => {
+    // Never call Google from tests (and work offline): answer GA with an empty script.
+    await context.route(/googletagmanager\.com|google-analytics\.com/, (route) =>
+      route.fulfill({ status: 200, contentType: "text/javascript", body: "" }),
+    );
+    if (consentCookie !== null) {
+      await context.addCookies([{ name: "gsg_consent", value: consentCookie, url: baseURL! }]);
+    }
+    await use(context);
+  },
+
   pageProblems: [
     async ({ page }, use) => {
       const problems: string[] = [];

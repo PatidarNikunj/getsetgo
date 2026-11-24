@@ -1,8 +1,13 @@
 import "./globals.css";
 
 import type { Metadata } from "next";
+import { consentFromCookieHeader } from "@getsetgo/consent";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { headers } from "next/headers";
 
+import { ConsentBanner, CookieSettingsButton } from "@/components/consent-banner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 import { Providers } from "./providers";
@@ -16,7 +21,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Reading request headers renders every page per request, so Next.js can apply the CSP nonce
   // that proxy.ts generated to all of its scripts. Client libraries that add <style> tags get it too.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
+  // Read on the server, so the banner and Google Analytics render correctly without a flash.
+  const consent = consentFromCookieHeader(requestHeaders.get("cookie"));
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
@@ -27,7 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
-        <Providers nonce={nonce}>
+        <Providers nonce={nonce} consent={consent}>
           <header className="border-b">
             <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
               <p className="text-lg font-semibold">
@@ -39,7 +47,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
             {children}
           </main>
+          <footer className="border-t">
+            <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2 text-sm text-muted-foreground">
+              <p>A getsetgo learning project.</p>
+              <CookieSettingsButton />
+            </div>
+          </footer>
+          <ConsentBanner />
+          <GoogleAnalytics nonce={nonce} />
         </Providers>
+        {/* Cookieless Vercel Web Analytics + Speed Insights, only when deployed on Vercel. */}
+        {process.env.VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

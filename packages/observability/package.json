@@ -1,0 +1,22 @@
+{
+  "name": "@getsetgo/observability",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Sentry options, Google Analytics helpers and CSP origins for analytics and error reporting.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@getsetgo/config": "workspace:*",
+    "@types/node": "^24.19.2",
+    "eslint": "^9.39.5",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.1"
+  }
+}

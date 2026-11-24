@@ -1,4 +1,5 @@
 import { securityHeaders } from "@getsetgo/web-security";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
@@ -12,7 +13,14 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   poweredByHeader: false,
   // Workspace packages ship TypeScript source; Next compiles them.
-  transpilePackages: ["@getsetgo/graphql", "@getsetgo/ui-tokens", "@getsetgo/web-security"],
+  transpilePackages: [
+    "@getsetgo/consent",
+    "@getsetgo/drafts",
+    "@getsetgo/graphql",
+    "@getsetgo/observability",
+    "@getsetgo/ui-tokens",
+    "@getsetgo/web-security",
+  ],
   turbopack: {
     rules: {
       "*.css": {
@@ -30,4 +38,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Uploads source maps to Sentry at build time when SENTRY_AUTH_TOKEN is set (CI/Vercel);
+// otherwise it only wires up the SDK. Sentry's own build telemetry is off.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

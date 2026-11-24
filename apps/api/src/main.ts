@@ -1,3 +1,5 @@
+// Must be first: Sentry instruments modules as they load.
+import "./instrument";
 import "reflect-metadata";
 
 import { ValidationPipe } from "@nestjs/common";

@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     ai_max_tokens: int = 4096
     ai_max_note_chars: int = 20_000
 
-    @field_validator("anthropic_api_key", mode="before")
+    # Observability (optional)
+    sentry_dsn: SecretStr | None = None
+    sentry_traces_sample_rate: float = Field(default=0.2, ge=0, le=1)
+
+    @field_validator("anthropic_api_key", "sentry_dsn", mode="before")
     @classmethod
     def _empty_key_is_unset(cls, value: object) -> object:
         # `ANTHROPIC_API_KEY=` in .env means "not configured", not an empty key.

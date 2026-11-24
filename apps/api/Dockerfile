@@ -9,7 +9,11 @@ WORKDIR /repo
 # ---- Build: install the workspace deps for api only, generate Prisma client, compile ----
 FROM base AS build
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# pnpm applies patches/ on every install (see patchedDependencies in pnpm-workspace.yaml).
+COPY patches patches
 COPY packages/config/package.json packages/config/
+# Workspace packages the API depends on (consent is a test-only dev dependency).
+COPY packages/consent/package.json packages/consent/
 COPY apps/api/package.json apps/api/
 COPY apps/api/prisma apps/api/prisma
 COPY apps/api/prisma.config.ts apps/api/

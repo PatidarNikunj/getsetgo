@@ -1,3 +1,4 @@
+import { analyticsCspSources } from "@getsetgo/observability";
 import { buildContentSecurityPolicy, createNonce } from "@getsetgo/web-security";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -7,7 +8,12 @@ import { type NextRequest, NextResponse } from "next/server";
  */
 export function proxy(request: NextRequest) {
   const nonce = createNonce();
-  const csp = buildContentSecurityPolicy({ nonce, isDev: process.env.NODE_ENV !== "production" });
+  const csp = buildContentSecurityPolicy({
+    nonce,
+    isDev: process.env.NODE_ENV !== "production",
+    // Google Analytics origins, only if a measurement id is configured.
+    extra: analyticsCspSources(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID),
+  });
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

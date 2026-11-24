@@ -13,11 +13,17 @@
     "clean": "rm -rf .next"
   },
   "dependencies": {
+    "@getsetgo/consent": "workspace:*",
+    "@getsetgo/drafts": "workspace:*",
     "@getsetgo/graphql": "workspace:*",
+    "@getsetgo/observability": "workspace:*",
     "@getsetgo/ui-tokens": "workspace:*",
     "@getsetgo/web-security": "workspace:*",
     "@hookform/resolvers": "^7.0.8",
+    "@sentry/nextjs": "^11.16.0",
     "@tanstack/react-query": "^5.108.2",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.1.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "get-nonce": "^1.0.1",

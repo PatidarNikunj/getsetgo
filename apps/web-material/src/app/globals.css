@@ -29,6 +29,20 @@
   color: var(--mui-palette-text-secondary);
 }
 
+.site-footer {
+  border-top: 1px solid var(--mui-palette-divider);
+  color: var(--mui-palette-text-secondary);
+  font-size: 0.875rem;
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.25rem;
+}
+
 .main {
   padding-block: 2rem;
 }

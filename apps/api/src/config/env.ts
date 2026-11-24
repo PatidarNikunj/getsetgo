@@ -16,6 +16,22 @@ export const envSchema = z.object({
   AI_SERVICE_URL: z.url(),
   SERVICE_JWT_SECRET: z.string().min(32, "SERVICE_JWT_SECRET must be at least 32 characters"),
 
+  // Observability: all optional; features stay off when unset.
+  SENTRY_DSN: z
+    .url()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  GA_MEASUREMENT_ID: z
+    .string()
+    .regex(/^G-[A-Z0-9]{4,12}$/)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  GA_API_SECRET: z
+    .string()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  GA_MP_ENDPOINT: z.url().default("https://www.google-analytics.com/mp/collect"),
+
   CORS_ORIGINS: z
     .string()
     .default("")

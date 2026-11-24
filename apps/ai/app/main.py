@@ -12,10 +12,13 @@ from app.config import get_settings
 from app.db.mongo import Mongo
 from app.db.postgres import Database
 from app.logging import configure_logging, log
+from app.observability import init_sentry
 from app.routers import health, summaries
 
 settings = get_settings()
 configure_logging(settings.log_level, json=settings.is_production)
+# Before the app is created, so FastAPI is instrumented.
+sentry_enabled = init_sentry(settings)
 
 # Accept an incoming request ID only if it looks safe to log (no log injection, OWASP A09).
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
@@ -26,7 +29,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.db = Database(settings.database_url.get_secret_value())
     app.state.mongo = Mongo(settings.mongodb_uri.get_secret_value(), settings.mongodb_db)
     await app.state.mongo.init()
-    log.info("startup", environment=settings.environment, model=settings.ai_model)
+    log.info(
+        "startup", environment=settings.environment, model=settings.ai_model, sentry=sentry_enabled
+    )
     yield
     await app.state.db.dispose()
     await app.state.mongo.close()

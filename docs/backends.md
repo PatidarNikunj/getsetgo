@@ -2,18 +2,19 @@
 
 ```
  browser ──GraphQL──▶ apps/api (NestJS, :4000) ──REST + service JWT──▶ apps/ai (FastAPI, :8000) ──▶ Claude
-                        │  Postgres (Prisma): notes              │  Postgres (SQLAlchemy): agent_runs
-                        │  Mongo (Mongoose): note_summaries      │  Mongo (Beanie): transcripts
-                        └  Redis: cached note lists              └  (internal only, never public)
+                        │  Postgres (Prisma): users, sessions,   │  Postgres (SQLAlchemy): agent_runs
+                        │    notes (owned by a user)             │  Mongo (Beanie): transcripts (sizes only)
+                        │  Mongo (Mongoose): note_summaries      └  (internal only, never public)
+                        └  Redis: note lists, sign-in state
 ```
 
 |          | `apps/api`                                                           | `apps/ai`                                   |
 | -------- | -------------------------------------------------------------------- | ------------------------------------------- |
-| Role     | Public GraphQL API; will own auth (OAuth + JWT)                      | Internal AI service; only `api` may call it |
+| Role     | Public GraphQL API; owns sign-in (OAuth + JWT sessions)              | Internal AI service; only `api` may call it |
 | Stack    | NestJS 12, Apollo Server 5, code-first GraphQL                       | FastAPI, Anthropic Python SDK               |
 | Postgres | Prisma 7 (`prisma/schema.prisma`, migrations in `prisma/migrations`) | SQLAlchemy 2 + Alembic (`migrations/`)      |
 | Mongo    | Mongoose (`note_summaries`)                                          | Beanie (`transcripts`)                      |
-| Redis    | Cache for note lists (60 s, cleared on every change)                 | —                                           |
+| Redis    | Per-user note-list cache (60 s, versioned); pending sign-ins         | —                                           |
 | Tests    | Jest unit (`pnpm test`) + e2e against real DBs (`pnpm test:e2e`)     | Pytest (`pnpm test`), Ruff, mypy strict     |
 
 ## Run it
@@ -96,6 +97,68 @@ With curl:
 ```bash
 curl -s localhost:4000/graphql -H 'content-type: application/json' -d '{"query":"{ notesList { id title } }"}'
 ```
+
+## Sign-in (specs/001-oauth-login)
+
+Notes are private: every GraphQL operation needs a signed-in user and only sees that user's notes
+(another user's note answers `NOT_FOUND`, exactly like a missing one). The `auth` module in
+`apps/api/src/auth/` does the rest:
+
+```
+ browser ── POST /api/auth/google/start ──▶ web app rewrite ──▶ api: state + PKCE, 303 to Google
+ Google  ── /api/auth/google/callback?code&state ──▶ api: checks state cookie (single use, Redis),
+            exchanges the code (PKCE), verifies the id_token, checks the allowlist,
+            sets __Host-gsg_at (15-min JWT) + __Host-gsg_rt (rotating refresh token), 303 to /
+```
+
+- **Libraries:** [arctic](https://arcticjs.dev) for the OAuth flow (Google, and GitHub through its
+  generic client so it gets PKCE too), [jose](https://github.com/panva/jose) for JWTs and Google's
+  `id_token`.
+- **Cookies** are `httpOnly; Secure; SameSite=Lax; Path=/` with the `__Host-` prefix. The API sets them
+  on responses that pass through each web app's `/api/*` rewrite, so they're first-party to that app:
+  each web app has its own sessions.
+- **Sessions** (`sessions`, `refresh_tokens` tables): the access JWT lives 15 minutes; renewing
+  (`POST /auth/refresh`) swaps the refresh token for a new one and extends the session by 30 days.
+  Presenting an already-used refresh token (outside a 10-second window for parallel tabs) ends the
+  session: someone has a copy. Only SHA-256 hashes of refresh tokens are stored.
+- **Allowlist** (`AUTH_ALLOWLIST`): comma-separated verified emails (`ada@example.com`), GitHub logins
+  (`github:octocat`) and test logins (`test:alice`, `test:e2e-*`). It's checked at sign-in and at every
+  renewal, so removing someone takes effect within 15 minutes. Accounts are never merged by email.
+- **CSRF:** `SameSite=Lax`, Apollo's CSRF prevention for GraphQL, and an `Origin` check on the REST
+  POST routes. **Bots:** reCAPTCHA v3 on sign-in start when `RECAPTCHA_SECRET_KEY` is set.
+- **Delete account** removes the user's summaries (Mongo), then the user; notes, sessions and tokens
+  cascade. The AI service stores only sizes, never note text, so nothing is left there.
+- **Release:** the auth migration deletes every pre-existing (ownerless) note, and the API deletes
+  ownerless summaries when it starts.
+
+Contracts: [`specs/001-oauth-login/contracts/`](../specs/001-oauth-login/contracts/).
+
+### The test provider (local and e2e only)
+
+`AUTH_TEST_PROVIDER=enabled` adds a "Continue with test provider" button. It speaks the same OAuth +
+PKCE flow through a plain form served by the API, so you can sign in as anyone on the allowlist (`alice`,
+`bob`, `e2e-…`) without a Google or GitHub account. It can never run in production: the API refuses to
+start with it while `APP_ENV=production`, and the Docker image and `render.yaml` set `APP_ENV=production`.
+`pnpm infra:env` turns it on for local development.
+
+### Setting up Google and GitHub
+
+- **Google:** [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → Create
+  credentials → OAuth client ID → Web application. Authorized redirect URIs: one per web app, e.g.
+  `http://localhost:3000/api/auth/google/callback` and `http://localhost:3001/api/auth/google/callback`
+  (plus the Vercel URLs in production). Put the ID and secret in `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET`.
+- **GitHub:** OAuth apps allow only one callback URL, so create **one OAuth app per web app**
+  ([GitHub → Settings → Developer settings → OAuth Apps](https://github.com/settings/developers)), with
+  callback `<web app origin>/api/auth/github/callback`. Then set:
+
+  ```bash
+  GITHUB_OAUTH_APPS={"http://localhost:3000":{"clientId":"…","clientSecret":"…"},"http://localhost:3001":{"clientId":"…","clientSecret":"…"}}
+  ```
+
+- **reCAPTCHA v3 (optional):** [admin console](https://www.google.com/recaptcha/admin) → v3, add your
+  domains (and `localhost`). The site key goes in each web app's `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, the
+  secret in the API's `RECAPTCHA_SECRET_KEY`.
 
 ## Security built in (constitution principle III)
 

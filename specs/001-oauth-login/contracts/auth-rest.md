@@ -13,10 +13,11 @@ Common rules:
   plain-language messages and never show provider error text.
 - Rate limits are in research D14.
 
-## `GET /api/auth/providers` (public)
+## `GET /auth/providers?origin=<web origin>` (public)
 
-Lists the sign-in options for the calling web origin (from `X-Forwarded-Host`/`Host`, matched against
-`CORS_ORIGINS`) and whether bot protection is on.
+Called server-side by the sign-in page (straight to the API). Lists the sign-in options configured for
+that web app origin (it must be in `CORS_ORIGINS`; otherwise the list is empty) and whether bot
+protection is on.
 
 ```json
 { "providers": ["google", "github"], "recaptcha": true }

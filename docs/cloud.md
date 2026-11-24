@@ -79,20 +79,25 @@ What the workflows do (`.github/workflows/`):
 
 1. Sign up at https://render.com with GitHub and allow access to this repository.
 2. **New → Blueprint** → select the repo. Render reads [`render.yaml`](../render.yaml) and shows both
-   services plus a shared, auto-generated `SERVICE_JWT_SECRET`.
+   services plus auto-generated `SERVICE_JWT_SECRET` and `AUTH_JWT_SECRET`. `APP_ENV=production` is
+   pinned, so the test sign-in provider can never be enabled there.
 3. Fill in the values it asks for:
 
-| Service      | Variable             | Value                                                                                  |
-| ------------ | -------------------- | -------------------------------------------------------------------------------------- |
-| getsetgo-api | `DATABASE_URL`       | Neon api string (step 2)                                                               |
-|              | `MONGODB_URI`        | Atlas api string (step 3)                                                              |
-|              | `REDIS_URL`          | Upstash URL (step 4)                                                                   |
-|              | `AI_SERVICE_URL`     | `https://getsetgo-ai.onrender.com`; fill in after the first deploy if the name differs |
-|              | `CORS_ORIGINS`       | your two Vercel URLs, comma-separated (step 6)                                         |
-|              | `SENTRY_DSN`, `GA_*` | optional, see [observability](observability.md)                                        |
-| getsetgo-ai  | `DATABASE_URL`       | Neon ai string with `postgresql+asyncpg://…?ssl=require`                               |
-|              | `MONGODB_URI`        | Atlas ai string                                                                        |
-|              | `ANTHROPIC_API_KEY`  | from https://console.anthropic.com (optional: without it, summaries say "unavailable") |
+| Service      | Variable               | Value                                                                                            |
+| ------------ | ---------------------- | ------------------------------------------------------------------------------------------------ |
+| getsetgo-api | `DATABASE_URL`         | Neon api string (step 2)                                                                         |
+|              | `MONGODB_URI`          | Atlas api string (step 3)                                                                        |
+|              | `REDIS_URL`            | Upstash URL (step 4)                                                                             |
+|              | `AI_SERVICE_URL`       | `https://getsetgo-ai.onrender.com`; fill in after the first deploy if the name differs           |
+|              | `CORS_ORIGINS`         | your two Vercel URLs, comma-separated (step 6)                                                   |
+|              | `AUTH_ALLOWLIST`       | who may sign in: your Google/GitHub email, `github:<login>` (comma-separated)                    |
+|              | `GOOGLE_CLIENT_*`      | Google OAuth client ID and secret ([backends](backends.md#setting-up-google-and-github))         |
+|              | `GITHUB_OAUTH_APPS`    | JSON, one GitHub OAuth app per Vercel URL ([backends](backends.md#setting-up-google-and-github)) |
+|              | `RECAPTCHA_SECRET_KEY` | optional bot protection on sign-in                                                               |
+|              | `SENTRY_DSN`, `GA_*`   | optional, see [observability](observability.md)                                                  |
+| getsetgo-ai  | `DATABASE_URL`         | Neon ai string with `postgresql+asyncpg://…?ssl=require`                                         |
+|              | `MONGODB_URI`          | Atlas ai string                                                                                  |
+|              | `ANTHROPIC_API_KEY`    | from https://console.anthropic.com (optional: without it, summaries say "unavailable")           |
 
 4. **Apply**. Migrations run automatically when each container starts. Check
    `https://getsetgo-api.onrender.com/health/ready`: everything should say `"up"`.
@@ -113,10 +118,13 @@ Create **two projects** from the same repository:
 | Variable                                                  | Value                               |
 | --------------------------------------------------------- | ----------------------------------- |
 | `API_URL`                                                 | `https://getsetgo-api.onrender.com` |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`                          | optional (reCAPTCHA v3 site key)    |
 | `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional                            |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`       | optional, for readable stack traces |
 
-4. **Deploy**. Then put both production URLs into the API's `CORS_ORIGINS` on Render.
+4. **Deploy**. Then put both production URLs into the API's `CORS_ORIGINS` on Render, and add
+   `<URL>/api/auth/google/callback` (and `/github/callback`, one GitHub app each) to the OAuth apps.
+   Sign-in needs the exact origin: the API accepts sign-ins only from origins in `CORS_ORIGINS`.
 5. Optional: Project → **Analytics** and **Speed Insights** → Enable (cookieless, already wired in).
 
 Every pull request now gets its own preview URL for both apps.
@@ -126,7 +134,8 @@ Every pull request now gets its own preview URL for both apps.
 
 ## 7. Check that it works
 
-- Open both Vercel URLs: the cookie banner appears, notes load, and creating a note works.
+- Open both Vercel URLs: you're sent to **Sign in**; after signing in with an allowlisted account the
+  cookie banner appears, and creating a note works. A second account sees none of your notes.
 - **Summarize** works if the Anthropic key is set.
 - Response headers include a `content-security-policy` with a nonce (DevTools → Network).
 - Optional, with Sentry configured: throw a test error from the browser console with
@@ -144,16 +153,20 @@ Anthropic account.
 - Set a **monthly spend limit** in the Anthropic Console.
 - Keep secrets only in the provider dashboards and GitHub secrets, never in the repo (push protection
   helps).
-- Free tiers are for learning. Before real users: upgrade the API to an always-on plan, restrict Atlas
-  network access, and add login (the planned first Spec Kit feature) so notes aren't public.
+- Free tiers are for learning. Before real users: upgrade the API to an always-on plan and restrict Atlas
+  network access. Notes are private to each signed-in user, and only allowlisted people can sign in.
+- **Deploying the sign-in feature deletes all notes created before it** (they had no owner). Set the
+  auth variables on Render first, or nobody can sign in.
 
 ## Troubleshooting
 
-| Symptom                                    | Likely cause                                                                          |
-| ------------------------------------------ | ------------------------------------------------------------------------------------- |
-| `/health/ready` shows `"postgres": "down"` | wrong `DATABASE_URL`, or a missing `?sslmode=require` / `?ssl=require`                |
-| ai fails with an SSL argument error        | the ai URL must use `?ssl=require`, not `sslmode` (asyncpg)                           |
-| `"ai": "down"` on the API                  | `AI_SERVICE_URL` wrong, or the ai service is asleep (free plan)                       |
-| Summaries say "unavailable"                | `ANTHROPIC_API_KEY` missing or invalid on getsetgo-ai                                 |
-| Everyone shares one rate limit             | `TRUST_PROXY_HOPS` must be `2` on Render (set by the Blueprint)                       |
-| Vercel build fails on install              | the root `package.json` requires Node 24: Project → Settings → Node.js Version → 24.x |
+| Symptom                                    | Likely cause                                                                               |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `/health/ready` shows `"postgres": "down"` | wrong `DATABASE_URL`, or a missing `?sslmode=require` / `?ssl=require`                     |
+| ai fails with an SSL argument error        | the ai URL must use `?ssl=require`, not `sslmode` (asyncpg)                                |
+| `"ai": "down"` on the API                  | `AI_SERVICE_URL` wrong, or the ai service is asleep (free plan)                            |
+| Summaries say "unavailable"                | `ANTHROPIC_API_KEY` missing or invalid on getsetgo-ai                                      |
+| Everyone shares one rate limit             | `TRUST_PROXY_HOPS` must be `2` on Render (set by the Blueprint)                            |
+| Sign-in says "isn't available right now"   | the provider isn't configured for that exact origin, or the origin isn't in `CORS_ORIGINS` |
+| Sign-in says "invite-only"                 | add the account's verified email or `github:<login>` to `AUTH_ALLOWLIST`                   |
+| Vercel build fails on install              | the root `package.json` requires Node 24: Project → Settings → Node.js Version → 24.x      |

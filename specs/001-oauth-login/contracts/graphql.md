@@ -89,7 +89,7 @@ mutation DeleteAccount {
 | sign-in heading      | "Sign in"                                                                                 |
 | provider buttons     | "Continue with Google", "Continue with GitHub", "Continue with test provider"             |
 | sign-in error region | `role="alert"`                                                                            |
-| header menu button   | "Account menu"                                                                            |
+| header menu button   | starts with "Account menu", then the visible name and provider (WCAG 2.5.3)               |
 | menu items           | "Account", "Sign out", "Sign out everywhere"                                              |
 | account heading      | "Account"                                                                                 |
 | delete button        | "Delete account"                                                                          |

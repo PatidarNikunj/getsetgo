@@ -38,6 +38,15 @@ is switched off with `dataCollection` (TypeScript) / `data_collection` (Python):
 
 This was checked against a local stand-in for Sentry: no note text, cookies or consent values arrived.
 
+**Sign-in:** session cookies are `httpOnly` (scripts, analytics and error reporting can't read them). The
+API logs `/auth/*` requests without their query (where the one-time `code` and `state` travel) and
+redacts `Cookie`, `Set-Cookie`, `Location` and `Referer` headers. Auth events (`auth.sign_in.succeeded`,
+`auth.refresh.reuse_detected`, `auth.account.deleted`, …) carry ids only: never emails, tokens or codes.
+
+**reCAPTCHA v3** (only when configured, only on the sign-in page) is bot protection, not analytics, so it
+isn't behind the analytics consent. Google sees the visitor's IP and browser signals; the page shows the
+notice Google requires.
+
 **Google Analytics:** gtag.js isn't even requested until the visitor accepts. Ad features and Google
 signals are off. Server-side events (`note_created`, `note_summarized`) are sent by the API **only** when
 the consent cookie allows analytics and a `_ga` client id exists; they carry sizes and model names, never

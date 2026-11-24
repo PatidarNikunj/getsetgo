@@ -45,6 +45,33 @@ browser ──POST /api/graphql──▶ Next.js rewrite ──▶ API (same ori
 - **Shared code:** typed GraphQL operations (`packages/graphql`, generated with GraphQL Codegen from
   `apps/api/schema.graphql`), design tokens (`packages/ui-tokens`) and security headers (`packages/web-security`).
 
+## Signing in
+
+Pages: `/sign-in`, `/` (notes) and `/account`. Both apps share accessible names, so one Playwright
+suite (`packages/e2e/src/auth-suite.ts`) tests both.
+
+- **`proxy.ts`** runs before every page. Without session cookies it redirects to
+  `/sign-in?returnTo=…`. When the 15-minute access cookie is missing or about to expire, it renews the
+  session server-side (`POST $API_URL/auth/refresh`) and passes the new cookies on, so a returning
+  visitor never sees a sign-in flash. This is routing only: the API decides every access.
+- **Server rendering** forwards only the two session cookies to the API (`lib/session.server.ts`;
+  web-material through an Apollo `SetContextLink`).
+- **In the browser**, a GraphQL `UNAUTHENTICATED` error triggers one renewal and a retry
+  (`withSessionRetry` from `@getsetgo/graphql` for TanStack Query; an Apollo `ErrorLink` in
+  web-material). Renewal is single-flight, because every renewal rotates the refresh token. If it fails,
+  the app goes to `/sign-in`; the unsaved note stays in IndexedDB.
+- **Sign-in buttons and Sign out** are native forms, so they work before React hydrates.
+- **reCAPTCHA v3** loads only on `/sign-in`, only when `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` is set, with
+  the nonce. The CSP for that page adds Google's reCAPTCHA origins and `form-action` for the providers
+  (browsers apply `form-action` to the redirect after a form post too).
+- **After sign-out or account deletion** the apps do a full page load, which drops all client state.
+  Signed-in pages are sent with `Cache-Control: no-store`, so Back can't show them.
+
+**Known limitation (web-shadcn):** the notes list streams in after the page shell. If a note is saved
+before React has hydrated that section (within about a second of loading), React re-renders the section
+on the client and reports a recoverable hydration error. The UI ends up correct. The e2e tests wait for the
+page to finish loading before typing, like a person would.
+
 ## Security: strict nonce CSP
 
 Every page gets a fresh nonce from `src/proxy.ts`; scripts and `<style>` tags without it are blocked

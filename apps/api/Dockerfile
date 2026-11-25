@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # NestJS API image. Build from the repo root:  docker build -f apps/api/Dockerfile .
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
 WORKDIR /repo
@@ -29,7 +29,7 @@ RUN pnpm --filter @getsetgo/api build \
 RUN cd /out && ./node_modules/.bin/prisma version
 
 # ---- Runtime: production deps + compiled code, non-root ----
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 # APP_ENV defaults to production so test-only sign-in can never be on unless an environment says so.
 ENV NODE_ENV=production PORT=4000 APP_ENV=production
 WORKDIR /app

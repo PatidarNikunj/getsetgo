@@ -8,12 +8,13 @@ import {
   registerApolloClient,
 } from "@apollo/client-integration-nextjs";
 
-import { apiUrl, authCookieHeader } from "./session.server";
+import { apiUrl, authCookieHeader, clientIpHeader } from "./session.server";
 
 /**
  * Apollo Client for React Server Components. One instance per request; `PreloadQuery` uses it to
  * fetch on the server and stream the result into the browser's Apollo cache. It calls the API
- * directly (server to server) as the signed-in user: only the two session cookies are forwarded.
+ * directly (server to server) as the signed-in user: only the two session cookies are forwarded,
+ * plus the signed visitor IP for rate limiting.
  */
 export const { getClient, query, PreloadQuery } = registerApolloClient(
   () =>
@@ -21,7 +22,11 @@ export const { getClient, query, PreloadQuery } = registerApolloClient(
       cache: new InMemoryCache(),
       link: ApolloLink.from([
         new SetContextLink(async (prevContext) => ({
-          headers: { ...prevContext.headers, cookie: await authCookieHeader() },
+          headers: {
+            ...prevContext.headers,
+            ...(await clientIpHeader()),
+            cookie: await authCookieHeader(),
+          },
         })),
         new HttpLink({ uri: `${apiUrl}/graphql`, fetchOptions: { cache: "no-store" } }),
       ]),

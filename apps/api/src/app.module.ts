@@ -57,6 +57,8 @@ const SAFE_REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/;
           "req.headers.authorization",
           "req.headers.cookie",
           "req.headers.referer",
+          // A signed visitor IP can be replayed for a minute; the IP itself is logged as usual.
+          'req.headers["x-getsetgo-client-ip-signature"]',
           'res.headers["set-cookie"]',
           "res.headers.location",
         ],

@@ -62,4 +62,13 @@ describe("validateEnv", () => {
   it("requires Google credentials as a pair", () => {
     expect(() => validateEnv({ ...valid, GOOGLE_CLIENT_ID: "id" })).toThrow(/GOOGLE_CLIENT_ID/);
   });
+
+  it("treats an empty CLIENT_IP_SECRET as unset and rejects a short one", () => {
+    expect(validateEnv(valid).CLIENT_IP_SECRET).toBeUndefined();
+    expect(validateEnv({ ...valid, CLIENT_IP_SECRET: "" }).CLIENT_IP_SECRET).toBeUndefined();
+    expect(validateEnv({ ...valid, CLIENT_IP_SECRET: "z".repeat(32) }).CLIENT_IP_SECRET).toBe(
+      "z".repeat(32),
+    );
+    expect(() => validateEnv({ ...valid, CLIENT_IP_SECRET: "short" })).toThrow(/CLIENT_IP_SECRET/);
+  });
 });

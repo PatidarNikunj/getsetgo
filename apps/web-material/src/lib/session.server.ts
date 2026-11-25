@@ -1,6 +1,7 @@
 import "server-only";
 
 import { AUTH_COOKIES, MeDocument, type MeQuery } from "@getsetgo/graphql";
+import { clientIpHeaders } from "@getsetgo/web-security";
 import { cookies, headers } from "next/headers";
 import { cache } from "react";
 
@@ -18,6 +19,14 @@ export async function authCookieHeader(): Promise<string> {
     })
     .filter(Boolean)
     .join("; ");
+}
+
+/**
+ * The visitor's IP, signed with CLIENT_IP_SECRET, so the API rate-limits these server-side calls
+ * per visitor rather than per Vercel IP. Empty when the secret isn't set (local development).
+ */
+export async function clientIpHeader(): Promise<Record<string, string>> {
+  return clientIpHeaders(await headers(), process.env.CLIENT_IP_SECRET);
 }
 
 /** The signed-in user, or null. Cached per request (layout and page share one call). */
@@ -50,7 +59,10 @@ export interface SignInOptions {
 export async function getSignInOptions(): Promise<SignInOptions | null> {
   try {
     const origin = encodeURIComponent(await webOrigin());
-    const res = await fetch(`${apiUrl}/auth/providers?origin=${origin}`, { cache: "no-store" });
+    const res = await fetch(`${apiUrl}/auth/providers?origin=${origin}`, {
+      headers: await clientIpHeader(),
+      cache: "no-store",
+    });
     return res.ok ? ((await res.json()) as SignInOptions) : null;
   } catch {
     return null;

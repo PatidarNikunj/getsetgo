@@ -52,6 +52,21 @@ describe("session helpers", () => {
     ).toBe(false);
   });
 
+  it("passes extra headers (the signed visitor IP) without letting them replace the cookie", async () => {
+    const fetchFn = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }));
+    await renewSession({
+      apiUrl: "http://api",
+      refreshCookie: "__Host-gsg_rt=r",
+      origin: "http://localhost:3000",
+      headers: { "x-getsetgo-client-ip": "203.0.113.7", cookie: "evil=1" },
+      fetchFn,
+    });
+    expect(fetchFn.mock.calls[0]?.[1]?.headers).toMatchObject({
+      "x-getsetgo-client-ip": "203.0.113.7",
+      cookie: "__Host-gsg_rt=r",
+    });
+  });
+
   it("adds sign-in and reCAPTCHA sources to the CSP", () => {
     const csp = buildContentSecurityPolicy({
       nonce: "n",

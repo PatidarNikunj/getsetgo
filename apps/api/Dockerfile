@@ -12,8 +12,9 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 # pnpm applies patches/ on every install (see patchedDependencies in pnpm-workspace.yaml).
 COPY patches patches
 COPY packages/config/package.json packages/config/
-# Workspace packages the API depends on (consent is a test-only dev dependency).
+# Workspace packages the API depends on (consent and web-security are test-only dev dependencies).
 COPY packages/consent/package.json packages/consent/
+COPY packages/web-security/package.json packages/web-security/
 COPY apps/api/package.json apps/api/
 COPY apps/api/prisma apps/api/prisma
 COPY apps/api/prisma.config.ts apps/api/

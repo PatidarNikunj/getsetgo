@@ -23,6 +23,20 @@ async def test_summary_success_is_returned_and_recorded(
     assert recorder.runs[0]["agent"] == "note-summarizer"
 
 
+async def test_transcripts_never_contain_note_or_summary_text(
+    client: AsyncClient, recorder: FakeRecorder
+) -> None:
+    await client.post("/v1/summaries", json=BODY, headers=AUTH)
+
+    run = recorder.runs[0]
+    assert run["input"] == {"note_id": "n1", "title_chars": 9, "content_chars": 18}
+    assert run["output"] == {"summary_chars": 16, "key_points": 2}
+    stored = repr(run)
+    assert "Groceries" not in stored
+    assert "Milk" not in stored
+    assert "A short summary." not in stored
+
+
 async def test_request_id_is_echoed_when_safe(client: AsyncClient) -> None:
     response = await client.get("/health", headers={"X-Request-ID": "abc-123"})
     assert response.headers["x-request-id"] == "abc-123"

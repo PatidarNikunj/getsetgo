@@ -11,11 +11,18 @@ const contentField = (page: Page) => page.getByRole("textbox", { name: "Note", e
 const noteItem = (page: Page, title: string): Locator =>
   page.locator("main li").filter({ has: page.getByRole("heading", { name: title, exact: true }) });
 
-/** "Save note" is disabled until React hydrates, so it doubles as an "app is interactive" signal. */
-const waitForHydration = (page: Page) =>
-  expect(page.getByRole("button", { name: "Save note" })).toBeEnabled({ timeout: 30_000 });
+/**
+ * "Save note" is disabled until React hydrates, so it doubles as an "app is interactive" signal.
+ * Also wait for the streamed notes list to finish loading: saving a note before React has
+ * hydrated that section makes it re-render on the client (docs/frontends.md, known limitation).
+ */
+const waitForHydration = async (page: Page) => {
+  await expect(page.getByRole("button", { name: "Save note" })).toBeEnabled({ timeout: 30_000 });
+  await page.waitForLoadState("networkidle");
+};
 
 async function createNote(page: Page, title: string, content = "Written by Playwright.") {
+  await waitForHydration(page);
   await titleField(page).fill(title);
   await contentField(page).fill(content);
   await page.getByRole("button", { name: "Save note" }).click();
@@ -28,8 +35,9 @@ async function createNote(page: Page, title: string, content = "Written by Playw
  */
 export function notesSuite(appName: string) {
   test.describe(`${appName}: notes`, () => {
-    test("renders notes on the server with security headers", async ({ page, request }) => {
-      const response = await request.get("/");
+    test("renders notes on the server with security headers", async ({ page }) => {
+      // page.request shares the browser's (signed-in) cookies.
+      const response = await page.request.get("/");
       const csp = response.headers()["content-security-policy"] ?? "";
       expect(csp).toMatch(/script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
       expect(csp).toContain("frame-ancestors 'none'");
@@ -42,8 +50,8 @@ export function notesSuite(appName: string) {
       await expect(page.getByRole("heading", { level: 1, name: "New note" })).toBeVisible();
     });
 
-    test("proxies GraphQL through its own origin", async ({ request }) => {
-      const response = await request.post("/api/graphql", {
+    test("proxies GraphQL through its own origin", async ({ page }) => {
+      const response = await page.request.post("/api/graphql", {
         data: { query: "{ notesList(page: { take: 1 }) { id } }" },
       });
       expect(response.ok()).toBe(true);

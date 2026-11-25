@@ -1,22 +1,42 @@
 "use client";
 
-import { HttpLink } from "@apollo/client";
+import { ApolloLink, HttpLink } from "@apollo/client";
+import { CombinedGraphQLErrors } from "@apollo/client/errors";
+import { ErrorLink } from "@apollo/client/link/error";
 import {
   ApolloClient,
   ApolloNextAppProvider,
   InMemoryCache,
 } from "@apollo/client-integration-nextjs";
 import type { Consent } from "@getsetgo/consent";
-import { GRAPHQL_PATH } from "@getsetgo/graphql";
+import { goToSignIn, GRAPHQL_PATH, refreshSession } from "@getsetgo/graphql";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider, useColorScheme } from "@mui/material/styles";
 import { type ReactNode, useEffect, useState } from "react";
 import { Provider as ReduxProvider } from "react-redux";
+import { from, switchMap } from "rxjs";
 
 import { NotificationSnackbar } from "@/components/notification-snackbar";
 import { makeStore, useAppSelector } from "@/store/store";
 import { theme } from "@/theme";
+
+/**
+ * When the 15-minute access cookie has expired, renew the session once (shared with any other
+ * request doing the same) and retry. If renewal fails, go to sign-in; drafts stay in IndexedDB.
+ */
+const renewSessionLink = new ErrorLink(({ error, operation, forward }) => {
+  const unauthenticated =
+    CombinedGraphQLErrors.is(error) &&
+    error.errors.some((e) => e.extensions?.code === "UNAUTHENTICATED");
+  if (!unauthenticated || typeof window === "undefined") return;
+  return from(refreshSession()).pipe(
+    switchMap((renewed) => {
+      if (!renewed) goToSignIn();
+      return forward(operation);
+    }),
+  );
+});
 
 function makeApolloClient() {
   // During SSR this runs on the server (no relative URLs there), in the browser it uses the proxy.
@@ -35,7 +55,7 @@ function makeApolloClient() {
         },
       },
     }),
-    link: new HttpLink({ uri }),
+    link: ApolloLink.from([renewSessionLink, new HttpLink({ uri })]),
   });
 }
 

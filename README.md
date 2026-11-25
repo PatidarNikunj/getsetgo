@@ -98,3 +98,5 @@ Neon, MongoDB Atlas and Upstash, all on free tiers, deployed automatically after
 - [x] Phase 4: Frontends (two Next.js apps, shared Playwright + axe suite)
 - [x] Phase 5: Observability & client storage (Sentry, GA + consent, Vercel, IndexedDB drafts)
 - [x] Phase 6: CI/CD (GitHub Actions, CodeQL, Dependabot, Claude bot) & cloud deploy guide
+- [x] Feature 001: Sign in with Google or GitHub; private notes, rotating sessions, account deletion
+      ([spec](specs/001-oauth-login/spec.md))

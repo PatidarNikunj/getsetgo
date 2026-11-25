@@ -7,9 +7,24 @@ export interface CspOptions {
   nonce: string;
   isDev: boolean;
   /** Extra origins per directive, e.g. analytics or error reporting added in later phases. */
-  extra?: Partial<
-    Record<"script-src" | "connect-src" | "img-src" | "font-src" | "frame-src", string[]>
-  >;
+  extra?: CspSources;
+}
+
+export type CspDirective =
+  "script-src" | "connect-src" | "img-src" | "font-src" | "frame-src" | "form-action";
+
+/** Extra origins per directive. */
+export type CspSources = Partial<Record<CspDirective, string[]>>;
+
+/** Combine extra sources from several features (analytics, reCAPTCHA, sign-in…). */
+export function mergeCspSources(...parts: CspSources[]): CspSources {
+  const merged: CspSources = {};
+  for (const part of parts) {
+    for (const [directive, sources] of Object.entries(part) as [CspDirective, string[]][]) {
+      merged[directive] = [...new Set([...(merged[directive] ?? []), ...sources])];
+    }
+  }
+  return merged;
 }
 
 /** Random, unguessable nonce for one response. */
@@ -77,3 +92,5 @@ export function securityHeaders({ isDev }: { isDev: boolean }): { key: string; v
         ]),
   ];
 }
+
+export * from "./session";

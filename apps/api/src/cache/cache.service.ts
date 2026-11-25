@@ -40,6 +40,28 @@ export class CacheService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * A version number for a group of cached entries. Put it in the cache keys and call
+   * `bumpVersion` on every write: a slow read that started before the write then stores its
+   * (stale) result under the old version, which nobody reads any more.
+   */
+  async version(key: string): Promise<string> {
+    try {
+      return (await this.client.get(`ver:${key}`)) ?? "0";
+    } catch (err) {
+      this.logger.warn(`Cache version read failed for ${key}: ${(err as Error).message}`);
+      return "unavailable";
+    }
+  }
+
+  async bumpVersion(key: string, ttlSeconds = 24 * 60 * 60): Promise<void> {
+    try {
+      await this.client.multi().incr(`ver:${key}`).expire(`ver:${key}`, ttlSeconds).exec();
+    } catch (err) {
+      this.logger.warn(`Cache version bump failed for ${key}: ${(err as Error).message}`);
+    }
+  }
+
   /** Delete every key starting with `prefix` (SCAN, not KEYS, so Redis isn't blocked). */
   async invalidate(prefix: string): Promise<void> {
     try {

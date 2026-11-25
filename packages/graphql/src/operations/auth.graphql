@@ -1,0 +1,19 @@
+query Me {
+  me {
+    id
+    displayName
+    email
+    avatarUrl
+    provider
+    login
+    createdAt
+  }
+}
+
+mutation SignOutEverywhere {
+  signOutEverywhere
+}
+
+mutation DeleteAccount {
+  deleteAccount
+}

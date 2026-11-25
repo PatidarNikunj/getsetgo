@@ -1,5 +1,6 @@
 export * from "./generated/graphql";
 export { describeError, GraphQLRequestError, requestGraphQL } from "./request";
+export * from "./session";
 
 /** Same-origin path the browser uses; each Next.js app proxies it to the API. */
 export const GRAPHQL_PATH = "/api/graphql";

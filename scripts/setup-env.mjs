@@ -5,7 +5,7 @@
 //    replaced by a random value. If it already exists, only keys it is missing are added.
 // 2. apps/*/.env: created from each app's .env.example, with connection strings built from the
 //    root .env so every app uses the right database, login and password. Existing app .env files
-//    are left untouched.
+//    keep their values; only keys they are missing are appended.
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -72,6 +72,7 @@ const apps = {
     MONGODB_URI: mongo(env.API_MONGO_USER, env.API_MONGO_PASSWORD, env.API_MONGO_DB),
     REDIS_URL: `redis://:${env.REDIS_PASSWORD}@${host}:${env.REDIS_PORT}/0`,
     SERVICE_JWT_SECRET: env.SERVICE_JWT_SECRET,
+    AUTH_JWT_SECRET: env.AUTH_JWT_SECRET,
   },
   "apps/web-material": { API_URL: "http://localhost:4000" },
   "apps/web-shadcn": { API_URL: "http://localhost:4000" },
@@ -87,7 +88,16 @@ for (const [app, values] of Object.entries(apps)) {
   const target = `${app}/.env`;
   if (!existsSync(path(`${app}/.env.example`))) continue;
   if (existsSync(path(target))) {
-    console.warn(`${target} already exists, leaving it untouched.`);
+    const current = parse(readFileSync(path(target), "utf8"));
+    const example = parse(readFileSync(path(`${app}/.env.example`), "utf8"));
+    const missing = Object.keys(example).filter((key) => !(key in current));
+    if (missing.length > 0) {
+      const lines = missing.map((key) => `${key}=${values[key] ?? example[key]}`);
+      writeFileSync(path(target), `\n# Added by pnpm infra:env\n${lines.join("\n")}\n`, {
+        flag: "a",
+      });
+      console.warn(`Added to ${target}: ${missing.join(", ")}`);
+    }
     continue;
   }
   write(target, fill(readFileSync(path(`${app}/.env.example`), "utf8"), values));

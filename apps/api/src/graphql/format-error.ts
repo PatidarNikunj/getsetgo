@@ -29,7 +29,11 @@ export function formatGraphQLError(
     unknown
   > & { originalError?: NestOriginalError };
 
-  const status = originalError?.statusCode;
+  // Nest exceptions carry the status on originalError; some (e.g. the throttler's) only on
+  // extensions.status.
+  const status =
+    originalError?.statusCode ??
+    (typeof extensions.status === "number" ? extensions.status : undefined);
   if (status !== undefined && status < 500) {
     const message = Array.isArray(originalError?.message)
       ? originalError.message.join("; ")

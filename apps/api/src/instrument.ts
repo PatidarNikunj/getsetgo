@@ -6,7 +6,7 @@ import { existsSync } from "node:fs";
 
 import * as Sentry from "@sentry/nestjs";
 
-import { scrubSensitive } from "./observability/scrub";
+import { scrubAuthUrls, scrubSensitive } from "./observability/scrub";
 
 // ConfigModule loads .env later; Sentry needs SENTRY_DSN now (local development only).
 if (process.env.NODE_ENV !== "production" && existsSync(".env")) process.loadEnvFile(".env");
@@ -41,6 +41,6 @@ Sentry.init({
   },
   // Continue the trace into apps/ai only (sentry-trace + baggage headers), not to third parties.
   tracePropagationTargets: [process.env.AI_SERVICE_URL ?? "http://localhost:8000"],
-  beforeSend: (event) => scrubSensitive(event),
+  beforeSend: (event) => scrubSensitive(scrubAuthUrls(event)),
   beforeSendTransaction: (event) => scrubSensitive(event),
 });

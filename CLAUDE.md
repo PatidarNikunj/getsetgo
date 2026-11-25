@@ -59,7 +59,10 @@ pnpm --filter @getsetgo/graphql codegen         # regenerate typed operations fo
 - The API keeps small copies of `@getsetgo/consent` and the Sentry scrubber (it can't load
   TypeScript-source packages at runtime); `consent.spec.ts` checks they agree.
 - Web apps share accessible names so `packages/e2e` can test both; keep them in sync.
-- New GraphQL resolvers are denied unless marked `@Public()` (temporary) or authenticated.
+- Auth (specs/001-oauth-login): every GraphQL operation requires a signed-in user (`@CurrentUser()`);
+  `@Public()` is only for sign-in routes and health checks. Notes are owner-scoped: always filter by
+  `ownerId` and answer `NOT_FOUND` for other users' data. The test sign-in provider is refused when
+  `APP_ENV=production`; never weaken that check. Never log or send session cookies, codes or state.
 - TypeScript `strict`; no `any` without a justifying comment. Pinned to TypeScript 6.0 and ESLint 9
   until `typescript-eslint` and `eslint-plugin-jsx-a11y` support newer majors.
 - CI (`.github/workflows/ci.yml`) must stay green: it also fails on stale generated code and on

@@ -27,7 +27,14 @@ services:
     autoDeployTrigger: checksPass
     buildFilter:
       paths:
-        ["apps/api/**", "packages/config/**", "packages/consent/**", "pnpm-lock.yaml", "patches/**"]
+        [
+          "apps/api/**",
+          "packages/config/**",
+          "packages/consent/**",
+          "packages/web-security/**",
+          "pnpm-lock.yaml",
+          "patches/**",
+        ]
     envVars:
       - fromGroup: getsetgo-service-auth
       - key: NODE_ENV
@@ -52,6 +59,9 @@ services:
       # Vercel rewrite → Render load balancer → API: trust both hops for the client IP.
       - key: TRUST_PROXY_HOPS
         value: "2"
+      # Same value on both Vercel projects: per-visitor rate limits for server rendering.
+      - key: CLIENT_IP_SECRET
+        sync: false
       - key: DATABASE_URL # Neon, database getsetgo_api (…?sslmode=require)
         sync: false
       - key: MONGODB_URI # Atlas, user limited to getsetgo_api

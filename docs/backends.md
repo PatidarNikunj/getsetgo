@@ -160,16 +160,44 @@ start with it while `APP_ENV=production`, and the Docker image and `render.yaml`
   domains (and `localhost`). The site key goes in each web app's `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, the
   secret in the API's `RECAPTCHA_SECRET_KEY`.
 
+## Rate limiting
+
+Every REST route and GraphQL operation is limited to `RATE_LIMIT_PER_MINUTE` (default 120) requests per
+minute per visitor (`@nestjs/throttler`, `apps/api/src/security/gql-throttler.guard.ts`). The visitor
+is identified by IP, which arrives in one of two ways:
+
+```
+ browser ──▶ web app /api/* rewrite (Vercel) ──▶ Render LB ──▶ api    req.ip via TRUST_PROXY_HOPS=2
+ browser ──▶ web app server render ── signed visitor IP ─────▶ api    x-getsetgo-client-ip (+ signature)
+```
+
+- **Browser requests** go through the web app's rewrite. Express trusts exactly `TRUST_PROXY_HOPS`
+  proxies, so `req.ip` is the visitor and a browser can't spoof it with its own `X-Forwarded-For`.
+- **Server rendering** (`me`, `notesList`, `/auth/providers`, and session renewal in `proxy.ts`) calls
+  the API straight from the web server, so `req.ip` is one of Vercel's IPs and every visitor would share
+  one bucket. The web server therefore adds the visitor's IP (from Vercel's `x-real-ip`) and
+  `x-getsetgo-client-ip-signature: t=<unix seconds>,v1=<HMAC-SHA256>`, signed with `CLIENT_IP_SECRET`
+  (`packages/web-security/src/client-ip.ts`).
+- **The API uses the signed IP only if** `CLIENT_IP_SECRET` is set, the IP is a valid IPv4/IPv6
+  address, the timestamp is within 60 seconds, and the HMAC matches (constant-time comparison).
+  Otherwise it silently falls back to `req.ip`, so sending the headers from a browser gains nothing.
+  Both paths land in the same bucket, so a visitor's page renders and browser calls share one limit.
+- The signature header is redacted from logs (it could be replayed for up to a minute). Without the
+  secret (local development, CI) nothing changes: the headers are neither sent nor read.
+- `CLIENT_IP_SECRET` must be the same on the API and both web apps, at least 32 characters
+  (`openssl rand -base64 48`). To rotate it, set the new value on all three and redeploy; until they
+  match, server renders fall back to the shared Vercel bucket (nothing breaks).
+
 ## Security built in (constitution principle III)
 
-| Concern                | What the code does                                                                                                                                                                     |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Access control (A01)   | Global `DenyByDefaultGuard`: resolvers must be marked `@Public()` or (after the auth spec) authenticated. `ai` requires a 60-second HS256 service JWT with pinned issuer and audience. |
-| Injection (A03)        | Prisma/Mongoose/SQLAlchemy only; every input validated (class-validator, Pydantic); IDs must be UUIDs; unknown fields rejected.                                                        |
-| Insecure design (A04)  | GraphQL depth limit (8), rate limit (120 requests per minute per IP), 100 kB body limit, note size limit, prompt-injection guard in the summarizer prompt.                             |
-| Misconfiguration (A05) | Strict CSP and security headers (Helmet); CORS limited to the two web apps; introspection, API docs and stack traces disabled in production; unexpected errors masked.                 |
-| CSRF                   | Apollo `csrfPrevention`: simple form/GET requests are rejected.                                                                                                                        |
-| Logging (A09)          | Structured JSON logs; `authorization` and `cookie` headers redacted; the `X-Request-ID` flows browser → api → ai and is stored on each AI run.                                         |
+| Concern                | What the code does                                                                                                                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Access control (A01)   | Global `DenyByDefaultGuard`: resolvers must be marked `@Public()` or (after the auth spec) authenticated. `ai` requires a 60-second HS256 service JWT with pinned issuer and audience.               |
+| Injection (A03)        | Prisma/Mongoose/SQLAlchemy only; every input validated (class-validator, Pydantic); IDs must be UUIDs; unknown fields rejected.                                                                      |
+| Insecure design (A04)  | GraphQL depth limit (8), rate limit (120 requests per minute per visitor, see [Rate limiting](#rate-limiting)), 100 kB body limit, note size limit, prompt-injection guard in the summarizer prompt. |
+| Misconfiguration (A05) | Strict CSP and security headers (Helmet); CORS limited to the two web apps; introspection, API docs and stack traces disabled in production; unexpected errors masked.                               |
+| CSRF                   | Apollo `csrfPrevention`: simple form/GET requests are rejected.                                                                                                                                      |
+| Logging (A09)          | Structured JSON logs; `authorization` and `cookie` headers redacted; the `X-Request-ID` flows browser → api → ai and is stored on each AI run.                                                       |
 
 ## Changing things
 

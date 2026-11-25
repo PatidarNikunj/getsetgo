@@ -94,6 +94,7 @@ What the workflows do (`.github/workflows/`):
 |              | `GOOGLE_CLIENT_*`      | Google OAuth client ID and secret ([backends](backends.md#setting-up-google-and-github))         |
 |              | `GITHUB_OAUTH_APPS`    | JSON, one GitHub OAuth app per Vercel URL ([backends](backends.md#setting-up-google-and-github)) |
 |              | `RECAPTCHA_SECRET_KEY` | optional bot protection on sign-in                                                               |
+|              | `CLIENT_IP_SECRET`     | random, 32+ characters (`openssl rand -base64 48`); the same value goes on both Vercel projects  |
 |              | `SENTRY_DSN`, `GA_*`   | optional, see [observability](observability.md)                                                  |
 | getsetgo-ai  | `DATABASE_URL`         | Neon ai string with `postgresql+asyncpg://…?ssl=require`                                         |
 |              | `MONGODB_URI`          | Atlas ai string                                                                                  |
@@ -118,6 +119,7 @@ Create **two projects** from the same repository:
 | Variable                                                  | Value                               |
 | --------------------------------------------------------- | ----------------------------------- |
 | `API_URL`                                                 | `https://getsetgo-api.onrender.com` |
+| `CLIENT_IP_SECRET`                                        | the same value as on Render         |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`                          | optional (reCAPTCHA v3 site key)    |
 | `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_GA_MEASUREMENT_ID` | optional                            |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`       | optional, for readable stack traces |
@@ -125,6 +127,9 @@ Create **two projects** from the same repository:
 4. **Deploy**. Then put both production URLs into the API's `CORS_ORIGINS` on Render, and add
    `<URL>/api/auth/google/callback` (and `/github/callback`, one GitHub app each) to the OAuth apps.
    Sign-in needs the exact origin: the API accepts sign-ins only from origins in `CORS_ORIGINS`.
+   `CLIENT_IP_SECRET` lets the API rate-limit server-rendered pages per visitor: without it, every
+   visitor's page loads share Vercel's IPs and one limit (120 requests per minute, about 60 page
+   loads). Never prefix it with `NEXT_PUBLIC_`; it's only read on the server.
 5. Optional: Project → **Analytics** and **Speed Insights** → Enable (cookieless, already wired in).
 
 Every pull request now gets its own preview URL for both apps.
@@ -167,6 +172,7 @@ Anthropic account.
 | `"ai": "down"` on the API                  | `AI_SERVICE_URL` wrong, or the ai service is asleep (free plan)                            |
 | Summaries say "unavailable"                | `ANTHROPIC_API_KEY` missing or invalid on getsetgo-ai                                      |
 | Everyone shares one rate limit             | `TRUST_PROXY_HOPS` must be `2` on Render (set by the Blueprint)                            |
+| Page loads get 429 when many people visit  | `CLIENT_IP_SECRET` missing, or not identical on Render and both Vercel projects            |
 | Sign-in says "isn't available right now"   | the provider isn't configured for that exact origin, or the origin isn't in `CORS_ORIGINS` |
 | Sign-in says "invite-only"                 | add the account's verified email or `github:<login>` to `AUTH_ALLOWLIST`                   |
 | Vercel build fails on install              | the root `package.json` requires Node 24: Project → Settings → Node.js Version → 24.x      |

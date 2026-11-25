@@ -55,6 +55,7 @@ export async function renewSession({
   apiUrl,
   refreshCookie,
   origin,
+  headers = {},
   fetchFn = fetch,
 }: {
   apiUrl: string;
@@ -62,12 +63,14 @@ export async function renewSession({
   refreshCookie: string;
   /** This web app's origin (the API only accepts its own web apps). */
   origin: string;
+  /** Extra request headers, e.g. the signed visitor IP from `clientIpHeaders`. */
+  headers?: Record<string, string>;
   fetchFn?: typeof fetch;
 }): Promise<RenewResult> {
   try {
     const res = await fetchFn(`${apiUrl}/auth/refresh`, {
       method: "POST",
-      headers: { cookie: refreshCookie, origin, accept: "application/json" },
+      headers: { ...headers, cookie: refreshCookie, origin, accept: "application/json" },
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
     });

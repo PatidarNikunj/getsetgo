@@ -2,6 +2,7 @@ import { AUTH_COOKIES } from "@getsetgo/graphql";
 import { analyticsCspSources } from "@getsetgo/observability";
 import {
   buildContentSecurityPolicy,
+  clientIpHeaders,
   cookiesFromSetCookie,
   createNonce,
   jwtExpiresWithin,
@@ -37,6 +38,8 @@ export async function proxy(request: NextRequest) {
       apiUrl,
       refreshCookie: `${AUTH_COOKIES.refresh}=${refresh}`,
       origin: request.nextUrl.origin,
+      // Per-visitor rate limiting for this server-side call (docs/backends.md#rate-limiting).
+      headers: await clientIpHeaders(request.headers, process.env.CLIENT_IP_SECRET),
     });
     setCookies = renewed.setCookies;
     hasSession = renewed.ok;

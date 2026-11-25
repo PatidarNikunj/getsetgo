@@ -5,7 +5,8 @@
   "description": "Content Security Policy and security headers shared by both Next.js apps.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./client-ip": "./src/client-ip.ts"
   },
   "scripts": {
     "lint": "eslint .",

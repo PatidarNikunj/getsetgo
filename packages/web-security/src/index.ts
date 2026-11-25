@@ -93,4 +93,5 @@ export function securityHeaders({ isDev }: { isDev: boolean }): { key: string; v
   ];
 }
 
+export * from "./client-ip";
 export * from "./session";

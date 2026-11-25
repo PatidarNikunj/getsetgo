@@ -56,7 +56,13 @@ async def create_summary(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Note is too long to summarize")
 
     request_id = getattr(request.state, "request_id", None)
-    run_input = {"note_id": body.note_id, "title": body.title, "content": body.content}
+    # Transcripts keep sizes only, never note or summary text: deleting a note or an account in
+    # the API then leaves no copy behind here (specs/001-oauth-login research D2).
+    run_input = {
+        "note_id": body.note_id,
+        "title_chars": len(body.title),
+        "content_chars": len(body.content),
+    }
     started = time.perf_counter()
     try:
         result = await summarizer.summarize(body.title, body.content)
@@ -90,7 +96,10 @@ async def create_summary(
         latency_ms=latency_ms,
         request_id=request_id,
         input=run_input,
-        output=result.summary.model_dump(),
+        output={
+            "summary_chars": len(result.summary.summary),
+            "key_points": len(result.summary.key_points),
+        },
         error=None,
     )
     log.info(

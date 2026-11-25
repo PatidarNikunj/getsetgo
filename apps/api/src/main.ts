@@ -6,6 +6,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
+import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 
@@ -33,8 +34,13 @@ async function bootstrap(): Promise<void> {
   // limiting sees the real client IP, without letting clients spoof X-Forwarded-For.
   app.set("trust proxy", config.get("TRUST_PROXY_HOPS", { infer: true }));
   app.useBodyParser("json", { limit: "100kb" });
+  // Sign-in start and the test provider's form post urlencoded bodies.
+  app.useBodyParser("urlencoded", { limit: "16kb", extended: false });
+  // Session cookies (specs/001-oauth-login). Unsigned: the values are JWTs or random tokens.
+  app.use(cookieParser());
 
-  // CORS: only the configured frontends, with cookies (needed for the upcoming auth feature).
+  // CORS: only the configured frontends, with cookies. Browsers normally reach the API through
+  // each web app's same-origin rewrite, so this is a second line of defense.
   app.enableCors({
     origin: config.get("CORS_ORIGINS", { infer: true }),
     credentials: true,

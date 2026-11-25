@@ -60,6 +60,11 @@ export function NoteForm() {
       form.reset();
       draft.clear();
       toast.success(`Saved “${note.title}”`);
+      // If the list is still streaming in from the server render (fetched before this save),
+      // let it land first; otherwise it could arrive after the refetch and overwrite it.
+      if (queryClient.getQueryState(notesQuery.key)?.status === "pending") {
+        await queryClient.ensureQueryData(notesQuery.options()).catch(() => undefined);
+      }
       await queryClient.invalidateQueries({ queryKey: notesQuery.key });
     },
     onError: (error) => toast.error(describeError(error)),

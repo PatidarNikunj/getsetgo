@@ -4,6 +4,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -12,8 +13,12 @@ import { NotesList } from "@/components/notes-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { notesQuery } from "@/lib/notes";
 import { fetchNotesOnServer } from "@/lib/notes.server";
+import { getViewer } from "@/lib/session.server";
 
-export default function NotesPage() {
+export default async function NotesPage() {
+  // proxy.ts already sent visitors without a session here only if they have one; still ask the
+  // API (e.g. the account was just deleted in another browser).
+  if (!(await getViewer())) redirect("/sign-in?error=expired");
   return (
     <div className="flex flex-col gap-10">
       <section aria-labelledby="new-note-heading" className="flex flex-col gap-4">
@@ -40,7 +45,7 @@ export default function NotesPage() {
  * then hands the pending query to the browser cache, where NotesList picks it up.
  */
 async function PrefetchedNotes() {
-  // Notes are per-request data (and per-user once login exists): never prerender them.
+  // Notes are per-request, per-user data: never prerender them.
   await connection();
   const queryClient = new QueryClient();
   void queryClient.prefetchQuery({ ...notesQuery.options(), queryFn: fetchNotesOnServer });

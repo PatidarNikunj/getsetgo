@@ -14,9 +14,11 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "query Me {\n  me {\n    id\n    displayName\n    email\n    avatarUrl\n    provider\n    login\n    createdAt\n  }\n}\n\nmutation SignOutEverywhere {\n  signOutEverywhere\n}\n\nmutation DeleteAccount {\n  deleteAccount\n}": typeof types.MeDocument,
     "fragment NoteFields on Note {\n  id\n  title\n  content\n  createdAt\n  summary {\n    summary\n    keyPoints\n    model\n    createdAt\n  }\n}\n\nquery NotesList($page: NotesPageInput) {\n  notesList(page: $page) {\n    ...NoteFields\n  }\n}\n\nmutation CreateNote($input: CreateNoteInput!) {\n  createNote(input: $input) {\n    ...NoteFields\n  }\n}\n\nmutation DeleteNote($id: ID!) {\n  deleteNote(id: $id)\n}\n\nmutation SummarizeNote($id: ID!) {\n  summarizeNote(id: $id) {\n    ...NoteFields\n  }\n}": typeof types.NoteFieldsFragmentDoc,
 };
 const documents: Documents = {
+    "query Me {\n  me {\n    id\n    displayName\n    email\n    avatarUrl\n    provider\n    login\n    createdAt\n  }\n}\n\nmutation SignOutEverywhere {\n  signOutEverywhere\n}\n\nmutation DeleteAccount {\n  deleteAccount\n}": types.MeDocument,
     "fragment NoteFields on Note {\n  id\n  title\n  content\n  createdAt\n  summary {\n    summary\n    keyPoints\n    model\n    createdAt\n  }\n}\n\nquery NotesList($page: NotesPageInput) {\n  notesList(page: $page) {\n    ...NoteFields\n  }\n}\n\nmutation CreateNote($input: CreateNoteInput!) {\n  createNote(input: $input) {\n    ...NoteFields\n  }\n}\n\nmutation DeleteNote($id: ID!) {\n  deleteNote(id: $id)\n}\n\nmutation SummarizeNote($id: ID!) {\n  summarizeNote(id: $id) {\n    ...NoteFields\n  }\n}": types.NoteFieldsFragmentDoc,
 };
 
@@ -34,6 +36,10 @@ const documents: Documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query Me {\n  me {\n    id\n    displayName\n    email\n    avatarUrl\n    provider\n    login\n    createdAt\n  }\n}\n\nmutation SignOutEverywhere {\n  signOutEverywhere\n}\n\nmutation DeleteAccount {\n  deleteAccount\n}"): (typeof documents)["query Me {\n  me {\n    id\n    displayName\n    email\n    avatarUrl\n    provider\n    login\n    createdAt\n  }\n}\n\nmutation SignOutEverywhere {\n  signOutEverywhere\n}\n\nmutation DeleteAccount {\n  deleteAccount\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

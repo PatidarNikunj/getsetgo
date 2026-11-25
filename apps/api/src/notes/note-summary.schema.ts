@@ -7,6 +7,10 @@ export class NoteSummaryDoc {
   @Prop({ required: true, index: true })
   noteId: string;
 
+  /** The note's owner, so account deletion can remove every summary (FR-018). */
+  @Prop({ required: true, index: true })
+  ownerId: string;
+
   @Prop({ required: true })
   summary: string;
 

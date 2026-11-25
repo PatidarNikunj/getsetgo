@@ -90,6 +90,13 @@ docker compose exec mongo mongosh -u root -p
 docker compose exec redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli'
 ```
 
+## Signing in locally
+
+`pnpm infra:env` turns on the built-in **test provider** in `apps/api/.env` (`AUTH_TEST_PROVIDER=enabled`,
+`AUTH_ALLOWLIST=test:e2e-*,test:alice,test:bob`). Open either web app, choose **Continue with test
+provider**, and type `alice` (or `bob`, to check that two users can't see each other's notes). To use real
+Google or GitHub accounts, see [backends: setting up Google and GitHub](backends.md#setting-up-google-and-github).
+
 ## Troubleshooting
 
 - **"set XYZ in .env"** when starting: run `pnpm infra:env`, or add the missing variable from `.env.example`.

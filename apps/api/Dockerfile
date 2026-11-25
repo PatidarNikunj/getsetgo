@@ -29,7 +29,8 @@ RUN cd /out && ./node_modules/.bin/prisma version
 
 # ---- Runtime: production deps + compiled code, non-root ----
 FROM node:24-alpine AS runtime
-ENV NODE_ENV=production PORT=4000
+# APP_ENV defaults to production so test-only sign-in can never be on unless an environment says so.
+ENV NODE_ENV=production PORT=4000 APP_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./
 USER node

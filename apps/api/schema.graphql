@@ -2,6 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+"""Where the user signed in"""
+enum AuthProvider {
+  GITHUB
+  GOOGLE
+  TEST
+}
+
 input CreateNoteInput {
   content: String!
   title: String!
@@ -14,7 +21,15 @@ scalar DateTime
 
 type Mutation {
   createNote(input: CreateNoteInput!): Note!
+
+  """
+  Permanently delete the signed-in user, their notes, summaries and sessions
+  """
+  deleteAccount: Boolean!
   deleteNote(id: ID!): Boolean!
+
+  """End every session of the signed-in user, including this one"""
+  signOutEverywhere: Boolean!
 
   """Summarize a note with Claude (via the AI service)"""
   summarizeNote(id: ID!): Note!
@@ -48,8 +63,25 @@ input NotesPageInput {
 }
 
 type Query {
+  """The signed-in user"""
+  me: Viewer!
   note(id: ID!): Note!
 
   """Notes, newest first"""
   notesList(page: NotesPageInput): [Note!]!
+}
+
+"""The signed-in user (only ever yourself)"""
+type Viewer {
+  avatarUrl: String
+  createdAt: DateTime!
+  displayName: String!
+
+  """Only if the provider shared a verified email"""
+  email: String
+  id: ID!
+
+  """Provider username (GitHub/test), shown when there is no email"""
+  login: String
+  provider: AuthProvider!
 }

@@ -8,9 +8,12 @@ from beanie import Document, init_beanie
 from pydantic import Field
 from pymongo import AsyncMongoClient
 
+# Fields older transcripts used to store; removed at startup (purge_text_fields).
+TEXT_FIELDS = ("input.title", "input.content", "output.summary", "output.key_points")
+
 
 class Transcript(Document):
-    """Full input/output of an agent run, for debugging and evaluating prompts."""
+    """Metadata of an agent run (sizes, model, ids). Never note or summary text."""
 
     run_id: UUID
     agent: str
@@ -33,6 +36,16 @@ class Mongo:
 
     async def init(self) -> None:
         await init_beanie(database=self.client[self.db_name], document_models=[Transcript])
+        await self.purge_text_fields()
+
+    async def purge_text_fields(self) -> int:
+        """Remove note/summary text from transcripts written before sizes-only (idempotent)."""
+        collection = self.client[self.db_name][Transcript.Settings.name]
+        result = await collection.update_many(
+            {"$or": [{field: {"$exists": True}} for field in TEXT_FIELDS]},
+            {"$unset": dict.fromkeys(TEXT_FIELDS, "")},
+        )
+        return result.modified_count
 
     async def ping(self) -> bool:
         try:

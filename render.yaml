@@ -32,6 +32,21 @@ services:
       - fromGroup: getsetgo-service-auth
       - key: NODE_ENV
         value: production
+      # Pinned: test-only sign-in is refused in production.
+      - key: APP_ENV
+        value: production
+      - key: AUTH_JWT_SECRET # signs the 15-minute session cookie; api only
+        generateValue: true
+      - key: AUTH_ALLOWLIST # who may sign in: emails, github:<login> (docs/cloud.md)
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_OAUTH_APPS # JSON, one GitHub OAuth app per web app (docs/cloud.md)
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
       - key: LOG_LEVEL
         value: info
       # Vercel rewrite → Render load balancer → API: trust both hops for the client IP.

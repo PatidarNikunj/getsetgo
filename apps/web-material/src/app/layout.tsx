@@ -6,10 +6,13 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 
 import { ConsentBanner, CookieSettingsButton } from "@/components/consent-banner";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
+import { getViewer } from "@/lib/session.server";
 
 import { Providers } from "./providers";
 
@@ -26,6 +29,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const nonce = requestHeaders.get("x-nonce") ?? undefined;
   // Read on the server, so the banner and Google Analytics render correctly without a flash.
   const consent = consentFromCookieHeader(requestHeaders.get("cookie"));
+  const viewer = await getViewer();
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -39,9 +43,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <header className="site-header">
             <div className="container header-row">
               <p className="brand">
-                getsetgo <span className="brand-muted">· Material UI</span>
+                <Link href="/" className="brand-link">
+                  getsetgo <span className="brand-muted">· Material UI</span>
+                </Link>
               </p>
-              <ThemeToggle />
+              <div className="header-actions">
+                <ThemeToggle />
+                {viewer && <UserMenu viewer={viewer} />}
+              </div>
             </div>
           </header>
           <main id="main" tabIndex={-1} className="container main">

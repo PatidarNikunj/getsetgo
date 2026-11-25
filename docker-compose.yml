@@ -121,6 +121,16 @@ services:
       AI_SERVICE_URL: http://ai:8000
       SERVICE_JWT_SECRET: ${SERVICE_JWT_SECRET:?set SERVICE_JWT_SECRET in .env}
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      # Local stack and CI e2e: the built-in test sign-in provider (never in production).
+      APP_ENV: test
+      AUTH_TEST_PROVIDER: enabled
+      # The e2e suites sign in and load pages many times a minute from one IP.
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-2000}
+      AUTH_ALLOWLIST: ${AUTH_ALLOWLIST:-test:e2e-*,test:alice,test:bob}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set AUTH_JWT_SECRET in .env (pnpm infra:env)}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_OAUTH_APPS: ${GITHUB_OAUTH_APPS:-}
       SENTRY_DSN: ${API_SENTRY_DSN:-}
       GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-}
       GA_API_SECRET: ${GA_API_SECRET:-}

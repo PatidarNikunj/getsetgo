@@ -65,6 +65,13 @@ export const envSchema = z
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
     // Requests per minute per client IP (GraphQL and REST). Raised for local e2e runs only.
     RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).default(120),
+    // Shared with the web apps: they sign the visitor IP of their server-side calls with it, so
+    // those calls are rate-limited per visitor instead of per Vercel IP. Unset = headers ignored.
+    CLIENT_IP_SECRET: z
+      .string()
+      .optional()
+      .transform((value) => value || undefined)
+      .pipe(z.string().min(32, "CLIENT_IP_SECRET must be at least 32 characters").optional()),
 
     CORS_ORIGINS: z
       .string()

@@ -126,6 +126,8 @@ services:
       AUTH_TEST_PROVIDER: enabled
       # The e2e suites sign in and load pages many times a minute from one IP.
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-2000}
+      # Optional: set it in .env (and export it for the web apps) to try signed visitor IPs locally.
+      CLIENT_IP_SECRET: ${CLIENT_IP_SECRET:-}
       AUTH_ALLOWLIST: ${AUTH_ALLOWLIST:-test:e2e-*,test:alice,test:bob}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?set AUTH_JWT_SECRET in .env (pnpm infra:env)}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

@@ -15,8 +15,15 @@ export const OAUTH_STATE_TTL_SECONDS = 10 * 60;
 
 const base: CookieOptions = { httpOnly: true, secure: true, sameSite: "lax", path: "/" };
 
+// Flags written out (not spread from `base`) so static analysis (CodeQL) can see them.
 export function cookieOptions(maxAgeSeconds: number): CookieOptions {
-  return { ...base, maxAge: maxAgeSeconds * 1000 };
+  return {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: maxAgeSeconds * 1000,
+  };
 }
 
 export function setSessionCookies(

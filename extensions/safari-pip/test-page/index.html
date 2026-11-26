@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auto PiP test page</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0 auto;
+        max-width: 760px;
+        padding: 16px;
+        font:
+          15px/1.5 -apple-system,
+          system-ui,
+          sans-serif;
+      }
+      video {
+        width: 100%;
+        background: #000;
+        border-radius: 8px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      li {
+        margin: 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Auto PiP test page</h1>
+    <p>
+      Pick a local video file (or use the generated clock), press play, then try each case below.
+    </p>
+
+    <div class="controls">
+      <label>Video file <input type="file" id="file" accept="video/*" /></label>
+      <button type="button" id="generated">Use generated clock video</button>
+      <label><input type="checkbox" id="block" /> Site blocks PiP (disablepictureinpicture)</label>
+    </div>
+
+    <video id="video" controls playsinline></video>
+
+    <h2>Checklist</h2>
+    <ol>
+      <li>
+        Switch tab with Ctrl+Tab or Cmd+Shift+]: PiP opens. Come back: PiP closes, video keeps
+        playing here.
+      </li>
+      <li>
+        Click another tab in the tab bar: PiP opens if Safari allows it without a gesture (see
+        README).
+      </li>
+      <li>Cmd+Tab to another app or click another window: same as above.</li>
+      <li>Cmd+T / Cmd+N / Cmd+H / Cmd+M: PiP opens, closes on return.</li>
+      <li>Pause in the PiP window, then come back: video stays paused here.</li>
+      <li>Close the PiP window while away, then come back: nothing re-opens.</li>
+    </ol>
+
+    <script>
+      const video = document.getElementById("video");
+      document.getElementById("file").addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        video.srcObject = null;
+        video.src = URL.createObjectURL(file);
+      });
+      document.getElementById("block").addEventListener("change", (e) => {
+        video.disablePictureInPicture = e.target.checked;
+      });
+      document.getElementById("generated").addEventListener("click", () => {
+        const canvas = Object.assign(document.createElement("canvas"), { width: 640, height: 360 });
+        const ctx = canvas.getContext("2d");
+        const draw = () => {
+          ctx.fillStyle = "#1e3a8a";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 64px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(new Date().toLocaleTimeString(), canvas.width / 2, canvas.height / 2 + 22);
+          requestAnimationFrame(draw);
+        };
+        draw();
+        video.removeAttribute("src");
+        video.srcObject = canvas.captureStream(30);
+        video.play();
+      });
+    </script>
+  </body>
+</html>

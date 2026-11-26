@@ -11,6 +11,9 @@ export const DEFAULTS = Object.freeze({
   // Enter PiP during Safari's tab/window shortcuts (Ctrl+Tab, Cmd+Shift+], Cmd+1…9, Cmd+T, Cmd+N,
   // Cmd+`, Cmd+H, Cmd+M). The key press is a user gesture, which Safari requires for PiP.
   shortcutAssist: true,
+  // React to the native Auto PiP Helper app's signal key (Ctrl+Option+F18), sent just before
+  // Cmd+Tab, Spotlight, Mission Control, or a click on another app or Safari tab.
+  helperSignal: true,
   // Remove `disablepictureinpicture` that some sites put on their players.
   unblockDisabled: true,
   // Also consider muted videos the user hasn't interacted with (autoplaying previews, feeds).

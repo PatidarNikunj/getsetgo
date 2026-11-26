@@ -10,6 +10,8 @@
  *   3. requestPictureInPicture() / webkitSetPresentationMode() on visibilitychange and blur.
  *   4. Shortcut assist: entering PiP inside the keydown of Safari's tab/window shortcuts, which
  *      is a real gesture. This is the route that works reliably today.
+ *   5. Helper signal: the native Auto PiP Helper app sends Ctrl+Option+F18 just before Cmd+Tab
+ *      or a click that leaves Safari, so those get a real gesture too.
  */
 (() => {
   "use strict";
@@ -32,6 +34,7 @@
     onWindowBlur: true,
     restoreOnReturn: true,
     shortcutAssist: true,
+    helperSignal: true,
     unblockDisabled: true,
     includeMuted: false,
     debug: false,
@@ -324,17 +327,55 @@
     return false;
   }
 
+  /**
+   * Key press sent by the native Auto PiP Helper app just before you leave Safari in a way the
+   * page can't see (Cmd+Tab, clicking another app or Safari tab). Keep in sync with
+   * helper/Sources/AutoPiPHelper/LeaveDetector.swift.
+   */
+  const isHelperSignal = (e) =>
+    e.code === "F18" && e.ctrlKey && e.altKey && !e.metaKey && !e.shiftKey;
+
+  /** Cmd is held (e.g. the Cmd+Tab switcher is open): don't decide "stayed" yet. */
+  let metaDown = false;
+
+  function scheduleStrayCheck(tries = 0) {
+    setTimeout(() => {
+      if (document.visibilityState !== "visible" || !document.hasFocus()) return; // we left
+      if (metaDown && tries < 20) return scheduleStrayCheck(tries + 1);
+      // e.g. Cmd+3 with only two tabs, or Cmd+Tab cancelled: still here, so close PiP again.
+      onReturn("stayed");
+    }, STRAY_PIP_CHECK_MS);
+  }
+
   function onKeyDown(e) {
-    if (!e.isTrusted || !settings.shortcutAssist || !activeHere()) return;
-    if (!isLeaveShortcut(e) || state.autoEntered || state.entering || anyPip()) return;
+    if (e.key === "Meta") metaDown = true;
+    if (!e.isTrusted || !activeHere()) return;
+    let source;
+    if (isHelperSignal(e)) {
+      // Not meant for the site.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!settings.helperSignal) return;
+      source = "helper";
+    } else if (settings.shortcutAssist && isLeaveShortcut(e)) {
+      source = `shortcut ${e.code}`;
+    } else {
+      return;
+    }
+    if (state.autoEntered || state.entering || anyPip()) return;
     const video = pickCandidate();
     if (!video) return;
-    log("leave shortcut:", e.code);
+    log("leaving page:", source);
     enterPip(video, "auto"); // synchronous: this keydown is the user gesture Safari wants
-    setTimeout(() => {
-      // e.g. Cmd+3 with only two tabs: we're still here, so close the window we opened.
-      if (document.visibilityState === "visible" && document.hasFocus()) onReturn("stayed");
-    }, STRAY_PIP_CHECK_MS);
+    scheduleStrayCheck();
+  }
+
+  function onKeyUp(e) {
+    if (e.key === "Meta") metaDown = false;
+    if (e.isTrusted && isHelperSignal(e)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
   }
 
   document.addEventListener("visibilitychange", () => {
@@ -346,6 +387,10 @@
   });
 
   window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("keyup", onKeyUp, true);
+  window.addEventListener("blur", () => {
+    metaDown = false;
+  });
 
   if (IS_TOP) {
     // Window/app focus is only meaningful in the top frame: an iframe "blurs" whenever the user

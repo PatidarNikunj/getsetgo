@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Auto PiP</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Auto PiP</h1>
+        <label class="switch">
+          <input type="checkbox" data-setting="enabled" />
+          <span>On</span>
+        </label>
+      </header>
+
+      <section aria-labelledby="site-heading">
+        <h2 id="site-heading" class="visually-hidden">This site</h2>
+        <label class="row">
+          <input type="checkbox" id="site-enabled" />
+          <span>Enable on <strong id="site-name">this site</strong></span>
+        </label>
+        <p id="status" class="status" role="status" aria-live="polite">Checking for video…</p>
+        <button type="button" id="toggle">Toggle Picture in Picture</button>
+      </section>
+
+      <section aria-labelledby="when-heading">
+        <h2 id="when-heading">Open PiP when I…</h2>
+        <label class="row">
+          <input type="checkbox" data-setting="onTabSwitch" />
+          <span>switch tab, minimise or hide Safari</span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="onWindowBlur" />
+          <span>switch to another app or window</span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="shortcutAssist" />
+          <span>use a tab/window shortcut <small>(most reliable in Safari)</small></span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="helperSignal" />
+          <span>get a signal from the Auto PiP Helper app <small>(⌘Tab, clicks)</small></span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="restoreOnReturn" />
+          <span>come back: close PiP and keep playing in the page</span>
+        </label>
+      </section>
+
+      <section aria-labelledby="adv-heading">
+        <h2 id="adv-heading">Advanced</h2>
+        <label class="row">
+          <input type="checkbox" data-setting="unblockDisabled" />
+          <span>Allow PiP on sites that block it</span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="includeMuted" />
+          <span>Include muted autoplaying videos</span>
+        </label>
+        <label class="row">
+          <input type="checkbox" data-setting="debug" />
+          <span>Log to the page console</span>
+        </label>
+      </section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

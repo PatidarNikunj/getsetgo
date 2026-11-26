@@ -14,6 +14,9 @@ export const DEFAULTS = Object.freeze({
   // React to the native Auto PiP Helper app's signal key (Ctrl+Option+F18), sent just before
   // Cmd+Tab, Spotlight, Mission Control, or a click on another app or Safari tab.
   helperSignal: true,
+  // Double-click on the PiP window (sent by the Auto PiP Helper app as Ctrl+Option+F19): switch to
+  // the tab with the video and play it in the page again.
+  helperReturn: true,
   // Remove `disablepictureinpicture` that some sites put on their players.
   unblockDisabled: true,
   // Also consider muted videos the user hasn't interacted with (autoplaying previews, feeds).

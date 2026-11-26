@@ -12,6 +12,14 @@ enum Signal {
     static let marker: Int64 = 0x5049_5048 // "PIPH"
 }
 
+/// The key press sent after a double-click on the PiP window, once Safari is in front. The
+/// extension then switches to the tab with the PiP video and closes PiP. Keep in sync with
+/// `isReturnSignal` in extension/content.js.
+enum ReturnSignal {
+    static let keyCode = CGKeyCode(kVK_F19)
+    static let flags: CGEventFlags = [.maskControl, .maskAlternate]
+}
+
 /// Watches input while Safari is frontmost. Just before an action that leaves Safari (and that the
 /// web page can't see), it sends Safari the signal key. That key press is a real user gesture in
 /// the page, which is what Safari requires before it allows Picture in Picture.
@@ -27,6 +35,15 @@ final class LeaveDetector {
     /// Minimum time between two signals (Cmd+Tab repeats Tab while the switcher is open).
     private static let debounce: CFTimeInterval = 1.0
 
+    /// Owner of the system Picture in Picture window (Safari's video PiP runs in it).
+    private static let pipAgentBundleID = "com.apple.PIPAgent"
+    private static let pipAgentName = "PIPAgent"
+
+    /// Give up on a double-click return if Safari hasn't come to the front by then.
+    private static let returnTimeout: CFTimeInterval = 2.0
+    /// Let Safari finish activating (and focus the page) before sending the return signal.
+    private static let returnDelay: TimeInterval = 0.15
+
     private let log = Logger(subsystem: "local.autopip.helper", category: "detector")
     private let eventSource = CGEventSource(stateID: .privateState)
     private let ownPID = ProcessInfo.processInfo.processIdentifier
@@ -34,6 +51,8 @@ final class LeaveDetector {
     private var runLoopSource: CFRunLoopSource?
     private var lastSignal: CFAbsoluteTime = 0
     private var activationObserver: NSObjectProtocol?
+    /// Safari PID and deadline while waiting for Safari to come to the front after a double-click.
+    private var pendingReturn: (pid: pid_t, deadline: CFAbsoluteTime)?
 
     /// PID of Safari while it is the frontmost app, otherwise nil.
     private(set) var frontSafariPID: pid_t?
@@ -68,6 +87,10 @@ final class LeaveDetector {
             frontSafariPID = app.processIdentifier
         } else {
             frontSafariPID = nil
+        }
+        if let pending = pendingReturn, let pid = frontSafariPID, pid == pending.pid {
+            pendingReturn = nil
+            if CFAbsoluteTimeGetCurrent() <= pending.deadline { scheduleReturnSignal() }
         }
     }
 
@@ -127,8 +150,20 @@ final class LeaveDetector {
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
             return
         }
-        guard Settings[.enabled], let safariPID = frontSafariPID else { return }
         if event.getIntegerValueField(.eventSourceUserData) == Signal.marker { return }
+        guard Settings[.enabled] else { return }
+
+        // Double-click on the PiP window, whichever app is in front.
+        if type == .leftMouseDown, Settings[.doubleClickReturn],
+           event.getIntegerValueField(.mouseEventClickState) == 2,
+           let window = topWindow(at: event.location), isPipAgent(window)
+        {
+            // Don't stall the event tap with activation work.
+            DispatchQueue.main.async { [weak self] in self?.returnToVideo() }
+            return
+        }
+
+        guard let safariPID = frontSafariPID else { return }
 
         let reason: String?
         switch type {
@@ -182,6 +217,7 @@ final class LeaveDetector {
             return "Safari tab click"
         }
         if window.pid == ownPID { return nil } // our menu-bar menu
+        if isPipAgent(window) { return nil } // the PiP window floats above Safari; Safari stays
         // Menu bar and status items, and pop-up menus: clicking these doesn't leave Safari.
         if window.layer == Int(CGWindowLevelForKey(.mainMenuWindow))
             || window.layer == Int(CGWindowLevelForKey(.statusWindow))
@@ -260,6 +296,66 @@ final class LeaveDetector {
             CFGetTypeID(value) == AXUIElementGetTypeID()
         else { return nil }
         return (value as! AXUIElement) // type ID checked above
+    }
+
+    private func isPipAgent(_ window: WindowHit) -> Bool {
+        if window.owner == Self.pipAgentName { return true }
+        return NSRunningApplication(processIdentifier: window.pid)?.bundleIdentifier
+            == Self.pipAgentBundleID
+    }
+
+    // MARK: Double-click return
+
+    /// Brings Safari to the front, then sends the return signal so the extension can switch to the
+    /// tab with the PiP video.
+    private func returnToVideo() {
+        let safari: NSRunningApplication?
+        if let pid = frontSafariPID {
+            safari = NSRunningApplication(processIdentifier: pid)
+        } else {
+            safari = Self.safariBundleIDs.lazy
+                .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0) }
+                .first
+        }
+        guard let safari else { return } // PiP from another app (FaceTime, TV…) with Safari closed
+        if Settings[.debugLog] { log.info("Double-click on PiP window: back to Safari") }
+
+        if frontSafariPID == safari.processIdentifier {
+            scheduleReturnSignal()
+            return
+        }
+        pendingReturn = (
+            pid: safari.processIdentifier,
+            deadline: CFAbsoluteTimeGetCurrent() + Self.returnTimeout
+        )
+        // A background app can't always activate another app (macOS 14+); Accessibility can.
+        let element = AXUIElementCreateApplication(safari.processIdentifier)
+        let result = AXUIElementSetAttributeValue(
+            element, kAXFrontmostAttribute as CFString, kCFBooleanTrue
+        )
+        if result != .success { safari.activate(options: []) }
+        // updateFrontmost(_:) sends the signal once Safari is in front.
+    }
+
+    private func scheduleReturnSignal() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.returnDelay) { [weak self] in
+            self?.postReturnSignal()
+        }
+    }
+
+    /// Posts Ctrl+Option+F19 down/up. Safari is frontmost now, so the page in its active tab gets it.
+    private func postReturnSignal() {
+        guard frontSafariPID != nil else { return }
+        for keyDown in [true, false] {
+            guard let signal = CGEvent(
+                keyboardEventSource: eventSource,
+                virtualKey: ReturnSignal.keyCode,
+                keyDown: keyDown
+            ) else { continue }
+            signal.flags = ReturnSignal.flags
+            signal.setIntegerValueField(.eventSourceUserData, value: Signal.marker)
+            signal.post(tap: .cghidEventTap)
+        }
     }
 
     // MARK: Signal

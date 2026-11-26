@@ -35,6 +35,7 @@
     restoreOnReturn: true,
     shortcutAssist: true,
     helperSignal: true,
+    helperReturn: true,
     unblockDisabled: true,
     includeMuted: false,
     debug: false,
@@ -275,6 +276,9 @@
   }
 
   function onPipChange(video) {
+    // Tell the background which tab holds the PiP video, so a double-click on the PiP window
+    // (helper return signal) can bring that tab back.
+    send({ type: "pip-state", inPip: inPip(video) });
     if (inPip(video)) {
       // The browser entered PiP on its own (autopictureinpicture / media session) while we were
       // away: treat it as ours so it's restored on return.
@@ -335,6 +339,14 @@
   const isHelperSignal = (e) =>
     e.code === "F18" && e.ctrlKey && e.altKey && !e.metaKey && !e.shiftKey;
 
+  /**
+   * Key press the helper sends after you double-click the PiP window: it brings Safari to the
+   * front first, so this arrives in whichever tab is showing. The background then switches to the
+   * tab that has the PiP video. Keep in sync with `ReturnSignal` in LeaveDetector.swift.
+   */
+  const isReturnSignal = (e) =>
+    e.code === "F19" && e.ctrlKey && e.altKey && !e.metaKey && !e.shiftKey;
+
   /** Cmd is held (e.g. the Cmd+Tab switcher is open): don't decide "stayed" yet. */
   let metaDown = false;
 
@@ -349,6 +361,14 @@
 
   function onKeyDown(e) {
     if (e.key === "Meta") metaDown = true;
+    if (e.isTrusted && isReturnSignal(e)) {
+      // Not meant for the site. Works on any page (also sites where Auto PiP is switched off),
+      // because the PiP video is usually in another tab.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (settings.enabled && settings.helperReturn) send({ type: "return-to-pip" });
+      return;
+    }
     if (!e.isTrusted || !activeHere()) return;
     let source;
     if (isHelperSignal(e)) {
@@ -372,7 +392,7 @@
 
   function onKeyUp(e) {
     if (e.key === "Meta") metaDown = false;
-    if (e.isTrusted && isHelperSignal(e)) {
+    if (e.isTrusted && (isHelperSignal(e) || isReturnSignal(e))) {
       e.preventDefault();
       e.stopImmediatePropagation();
     }
@@ -464,6 +484,15 @@
       case "restore":
         onReturn("background");
         return false;
+      case "exit-pip": {
+        // Double-click on the PiP window: back to the page, whoever opened PiP.
+        const video = collectVideos().find(inPip);
+        if (!video) return false;
+        if (state.autoEntered === video) state.autoEntered = null;
+        log("returning from PiP window");
+        exitPip(video);
+        return false;
+      }
       case "toggle":
         toggle();
         return false;

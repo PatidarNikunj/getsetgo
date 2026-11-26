@@ -6,7 +6,9 @@ An Arc-style automatic Picture in Picture for Safari on macOS:
 - opens a floating PiP window when you leave the page (switch tab, switch window or app, minimise or
   hide Safari),
 - closes it when you come back, and playback continues in the site's own player (play/pause state
-  from the PiP window is kept).
+  from the PiP window is kept),
+- with the native helper: double-click the PiP window to jump back to the video's tab and keep
+  watching in the page.
 
 This folder is standalone. It isn't part of the pnpm workspace and doesn't use the monorepo's stack.
 
@@ -103,6 +105,20 @@ The build is ad-hoc signed by default, so macOS treats each rebuild as a new app
 entry in the Accessibility list and switch on the new one. To avoid that, sign with your
 development certificate: `SIGN_IDENTITY="Apple Development: …" ./build-app.sh`.
 
+### Double-click the PiP window to go back
+
+With the helper running, double-click the PiP window (whichever app is in front). The helper brings
+Safari to the front and sends **Ctrl+Option+F19**; the extension then switches to the tab and window
+that hold the PiP video, closes PiP and keeps playing in the page. Switch it off in the helper's
+menu (**Double-click the PiP window to go back to the video**) or in the extension popup.
+
+Limits: the key reaches the page in Safari's active tab, so it needs a page the extension runs on
+(not Safari's Start Page, and not while typing in the address bar). The PiP window belongs to
+macOS, not Safari, so double-clicking a FaceTime or TV PiP window also brings Safari forward.
+
+Window size: the PiP window is drawn by macOS (`PIPAgent`). Web pages and extensions can't size it,
+and macOS ignores resize requests through Accessibility; drag a corner to resize it.
+
 Limits: the signal goes to the focused frame, so if keyboard focus is inside an iframe without the
 video, nothing happens. If Safari's tab bar layout isn't recognised (tabs shown in the sidebar),
 tab clicks fall back to the routes Safari may reject; check with Xcode's Accessibility Inspector and
@@ -124,7 +140,7 @@ The background script is under **Develop → Web Extension Background Content**.
 | ------------------------- | ------------------------------------------------------------------- |
 | `extension/manifest.json` | Manifest V3 for Safari 16.4+                                        |
 | `extension/content.js`    | Video detection, enter/exit PiP, leave/return triggers (all frames) |
-| `extension/background.js` | Relays window focus to every frame of the tab; Alt+Shift+P command  |
+| `extension/background.js` | Relays window focus; remembers the PiP tab; Alt+Shift+P command     |
 | `extension/popup/`        | Toolbar popup: on/off, per-site switch, triggers, status            |
 | `extension/settings.js`   | Default settings (content.js keeps a copy; keep in sync)            |
 | `test-page/index.html`    | Manual test page                                                    |

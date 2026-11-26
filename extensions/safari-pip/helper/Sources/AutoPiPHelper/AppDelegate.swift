@@ -85,6 +85,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(toggle("Clicks on other apps, the Dock or the desktop", .clicksOutside))
         menu.addItem(toggle("Clicks on another Safari tab", .safariTabClicks))
         menu.addItem(.separator())
+        menu.addItem(toggle("Double-click the PiP window to go back to the video", .doubleClickReturn))
+        menu.addItem(.separator())
 
         if !AXIsProcessTrusted() {
             menu.addItem(action("Open Accessibility Settings…", #selector(grantPermission)))

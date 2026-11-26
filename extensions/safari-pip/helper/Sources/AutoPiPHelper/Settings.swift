@@ -10,6 +10,8 @@ enum Pref: String, CaseIterable {
     case clicksOutside
     /// Clicks on another tab in Safari's tab bar.
     case safariTabClicks
+    /// Double-click on the PiP window: bring Safari back with the video's tab.
+    case doubleClickReturn
     /// Write decisions to the system log (Console.app, process "AutoPiPHelper").
     case debugLog
 

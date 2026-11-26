@@ -65,11 +65,18 @@
 
     <script>
       const video = document.getElementById("video");
-      document.getElementById("file").addEventListener("change", (e) => {
+      const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"];
+      let fileUrl = "";
+      document.getElementById("file").addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file || !file.type.startsWith("video/")) return;
+        // Play a copy of the bytes, so no part of the picked file ends up as the video URL.
+        const type = VIDEO_TYPES.find((t) => t === file.type) ?? "video/mp4";
+        const blob = new Blob([await file.arrayBuffer()], { type });
+        if (fileUrl) URL.revokeObjectURL(fileUrl);
+        fileUrl = URL.createObjectURL(blob);
         video.srcObject = null;
-        video.src = URL.createObjectURL(file);
+        video.src = fileUrl;
       });
       document.getElementById("block").addEventListener("change", (e) => {
         video.disablePictureInPicture = e.target.checked;
